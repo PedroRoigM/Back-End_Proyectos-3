@@ -1,4 +1,4 @@
-GET https://api-937n.onrender.com/api/users
+GET http://localhost:3000/api/users
 
 ###
 POST http://localhost:3000/api/users
@@ -10,3 +10,7 @@ Content-Type: application/json
     "password": "securepassword123",
     "role": "alumno"
 }
+
+###
+GET http://localhost:3000/api/tfgs
+

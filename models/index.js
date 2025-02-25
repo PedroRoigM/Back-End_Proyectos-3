@@ -1,5 +1,5 @@
 const models = {
     usersModel: require('./nosql/users'),
-    tfgModel: require('./nosql/tfgs')
+    tfgsModel: require('./nosql/tfgs')
 }
 module.exports = models
