@@ -1,4 +1,4 @@
-GET http://localhost:3000/api/users
+GET https://api-937n.onrender.com/api/users
 
 ###
 POST http://localhost:3000/api/users
@@ -12,5 +12,22 @@ Content-Type: application/json
 }
 
 ###
+GET https://api-937n.onrender.com/api/tfgs
+
+###
 GET http://localhost:3000/api/tfgs
 
+###
+GET http://localhost:3000/api/tfgs/67bdc66d8feab4c55cc21e6c
+
+###
+PATCH http://localhost:3000/api/tfgs/67bdc66d8feab4c55cc21e6c
+Content-Type: application/json
+
+{
+    "Titulación de Grado": "TFG de prueba",
+    "Tutor": "Federica Peinado",
+    "Alumno": "Tu madre y tu padre"
+}
+
+# DELETE, CREATE
