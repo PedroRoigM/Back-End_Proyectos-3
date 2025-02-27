@@ -3,6 +3,7 @@
 * @param {*} req
 * @param {*} res
 */
+const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
 
 // Petición GET para obtener todos los tfgs
@@ -26,13 +27,24 @@ const getTFG = async (req, res) => {
 const patchTFG = async (req, res) => {
     try {
         const { id } = req.params
-        const { body } = req
+        const { body } = matchedData(req)
         const tfg = await tfgsModel.findByIdAndUpdate(id, body, { new: true })
         res.send(tfg)
     } catch (error) {
         res.status(500).json({ message: error.message })
     }
 }
+const putTFG = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { body } = req
+        const tfg = await tfgsModel.findByIdAndUpdate(id, body, { new: true })
+        res.send(tfg)
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
 
 
-module.exports = { getTFGs, getTFG, patchTFG }
+module.exports = { getTFGs, getTFG, patchTFG, putTFG }
