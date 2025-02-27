@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const mongooseDelete = require('mongoose-delete');
 const TfgSchema = new mongoose.Schema({
     "Año": { type: String, required: true }, // Año académico
     "Titulación de Grado": { type: String, required: true }, // Titulación de grado
@@ -14,4 +14,5 @@ const TfgSchema = new mongoose.Schema({
     versionKey: false
 });
 
+TfgSchema.plugin(mongooseDelete, { overrideMethods: true }); // Añadimos el plugin mongoose-delete
 module.exports = mongoose.model('tfgs', TfgSchema); // Exportamos el modelo Tfg

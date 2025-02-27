@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { getTFGs, getTFG, patchTFG, putTFG } = require('../controllers/tfgs');
-const { validateGetTFG, validatePatchTFG, validatePutTFG } = require('../validators/tfgs');
+const { getTFGs, getTFG, patchTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS } = require('../controllers/tfgs');
+const { validateIdMongo, validateCreateTFG, validateUpdateTFG, validateFileTFG, validateIdForPage } = require('../validators/tfgs');
 router.get('/', getTFGs);
-router.get('/:id', validateGetTFG, getTFG);
-router.patch('/:id', validatePatchTFG, patchTFG);
-router.put('/:id', validatePutTFG, putTFG);
+router.get('/:id', validateIdMongo, getTFG);
+router.get('/pages/:lastId', validateIdForPage, getNextTFGS);
+router.post('/', validateCreateTFG, createTFG);
+router.patch('/:id', validateIdMongo, validateUpdateTFG, patchTFG);
+router.patch('/:id', validateIdMongo, validateFileTFG, patchFileTFG);
+router.put('/:id', validateIdMongo, validateUpdateTFG, putTFG);
+router.delete('/:id', validateIdMongo, deleteTFG);
 module.exports = router;
