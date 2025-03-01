@@ -1,24 +1,17 @@
 openapi: 3.0.0
 info:
-  title: API de TFGs
-  description: API para gestionar Trabajos de Fin de Grado (TFGs)
+  title: API de TFGs y Usuarios
   version: 1.0.0
-
+  description: API para gestionar TFGs y usuarios en la plataforma
 servers:
-  - url: https://api-937n.onrender.com
-    description: Servidor local
-
-tags:
-  - name: TFGs
-    description: Endpoints relacionados con los Trabajos de Fin de Grado
-
+  - url: /api
 paths:
   /tfgs:
     get:
+      summary: Obtener todos los TFGs
+      operationId: getTFGs
       tags:
         - TFGs
-      summary: Obtener todos los TFGs
-      description: Devuelve una lista de todos los TFGs disponibles.
       responses:
         '200':
           description: Lista de TFGs obtenida correctamente
@@ -29,10 +22,10 @@ paths:
                 items:
                   $ref: '#/components/schemas/TFG'
     post:
+      summary: Crear un nuevo TFG
+      operationId: createTFG
       tags:
         - TFGs
-      summary: Crear un nuevo TFG
-      description: Crea un nuevo TFG con los datos proporcionados en el cuerpo de la solicitud.
       requestBody:
         required: true
         content:
@@ -41,18 +34,13 @@ paths:
               $ref: '#/components/schemas/TFG'
       responses:
         '201':
-          description: TFG creado exitosamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TFG'
-
+          description: TFG creado correctamente
   /tfgs/{id}:
     get:
+      summary: Obtener un TFG por ID
+      operationId: getTFG
       tags:
         - TFGs
-      summary: Obtener un TFG por ID
-      description: Devuelve un TFG específico basado en su ID.
       parameters:
         - name: id
           in: path
@@ -67,84 +55,107 @@ paths:
               schema:
                 $ref: '#/components/schemas/TFG'
     patch:
+      summary: Actualizar un TFG parcialmente
+      operationId: patchTFG
       tags:
         - TFGs
-      summary: Actualizar parcialmente un TFG
-      description: Permite actualizar solo los campos proporcionados en el cuerpo de la solicitud.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TFG'
-      responses:
-        '200':
-          description: TFG actualizado exitosamente
-    put:
-      tags:
-        - TFGs
-      summary: Actualizar completamente un TFG
-      description: Actualiza completamente un TFG basado en su ID.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TFG'
-      responses:
-        '200':
-          description: TFG actualizado exitosamente
-    delete:
-      tags:
-        - TFGs
-      summary: Eliminar un TFG (soft delete)
-      description: Marca un TFG como eliminado sin eliminarlo físicamente de la base de datos.
-      responses:
-        '204':
-          description: TFG eliminado correctamente
-
-  /tfgs/pages/{lastId}:
-    get:
-      tags:
-        - TFGs
-      summary: Obtener los siguientes 10 TFGs
-      description: Devuelve una lista de los próximos 10 TFGs a partir de un ID dado.
       parameters:
-        - name: lastId
+        - name: id
           in: path
-          required: false
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TFG'
+      responses:
+        '200':
+          description: TFG actualizado correctamente
+    put:
+      summary: Actualizar un TFG completamente
+      operationId: putTFG
+      tags:
+        - TFGs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TFG'
+      responses:
+        '200':
+          description: TFG actualizado correctamente
+    delete:
+      summary: Eliminar un TFG
+      operationId: deleteTFG
+      tags:
+        - TFGs
+      parameters:
+        - name: id
+          in: path
+          required: true
           schema:
             type: string
       responses:
+        '204':
+          description: TFG eliminado correctamente
+  /users:
+    get:
+      summary: Obtener todos los usuarios
+      operationId: getUsers
+      tags:
+        - Usuarios
+      responses:
         '200':
-          description: Lista de TFGs obtenida correctamente
+          description: Lista de usuarios obtenida correctamente
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TFG'
-
-  /tfgs/{id}/file:
-    patch:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Crear un nuevo usuario
+      operationId: createUser
       tags:
-        - TFGs
-      summary: Subir un archivo PDF a un TFG
-      description: Permite subir un archivo PDF y actualizar el campo `Link` del TFG.
+        - Usuarios
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Usuario creado correctamente
+  /users/{id}:
+    get:
+      summary: Obtener un usuario por ID
+      operationId: getUser
+      tags:
+        - Usuarios
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: Archivo subido correctamente
-
+          description: Usuario obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
 components:
   schemas:
     TFG:
@@ -152,38 +163,35 @@ components:
       properties:
         id:
           type: string
-          example: 603d2149e773f2a3990b47f5
         Año:
           type: string
-          example: "2023"
         Titulación de Grado:
           type: string
-          example: "Ingeniería Informática"
         Alumno:
           type: string
-          example: "Juan Pérez"
         Título TFG:
           type: string
-          example: "Optimización de Algoritmos en IA"
         Keywords:
           type: array
           items:
             type: string
-          example: ["Inteligencia Artificial", "Optimización", "Redes Neuronales"]
         Link:
           type: string
-          example: "http://servidor.com/archivo.pdf"
         Tutor:
           type: string
-          example: "Dr. Roberto García"
         Abstract/Resumen:
           type: string
-          example: "Este trabajo explora métodos de optimización en redes neuronales aplicadas a la inteligencia artificial."
-      required:
-        - Año
-        - Titulación de Grado
-        - Alumno
-        - Título TFG
-        - Keywords
-        - Tutor
-        - Abstract/Resumen
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: ["alumno", "profesor", "tutor", "administrador"]
