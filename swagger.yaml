@@ -1,0 +1,189 @@
+openapi: 3.0.0
+info:
+  title: API de TFGs
+  description: API para gestionar Trabajos de Fin de Grado (TFGs)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+tags:
+  - name: TFGs
+    description: Endpoints relacionados con los Trabajos de Fin de Grado
+
+paths:
+  /tfgs:
+    get:
+      tags:
+        - TFGs
+      summary: Obtener todos los TFGs
+      description: Devuelve una lista de todos los TFGs disponibles.
+      responses:
+        '200':
+          description: Lista de TFGs obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TFG'
+    post:
+      tags:
+        - TFGs
+      summary: Crear un nuevo TFG
+      description: Crea un nuevo TFG con los datos proporcionados en el cuerpo de la solicitud.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TFG'
+      responses:
+        '201':
+          description: TFG creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TFG'
+
+  /tfgs/{id}:
+    get:
+      tags:
+        - TFGs
+      summary: Obtener un TFG por ID
+      description: Devuelve un TFG específico basado en su ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: TFG obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TFG'
+    patch:
+      tags:
+        - TFGs
+      summary: Actualizar parcialmente un TFG
+      description: Permite actualizar solo los campos proporcionados en el cuerpo de la solicitud.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TFG'
+      responses:
+        '200':
+          description: TFG actualizado exitosamente
+    put:
+      tags:
+        - TFGs
+      summary: Actualizar completamente un TFG
+      description: Actualiza completamente un TFG basado en su ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TFG'
+      responses:
+        '200':
+          description: TFG actualizado exitosamente
+    delete:
+      tags:
+        - TFGs
+      summary: Eliminar un TFG (soft delete)
+      description: Marca un TFG como eliminado sin eliminarlo físicamente de la base de datos.
+      responses:
+        '204':
+          description: TFG eliminado correctamente
+
+  /tfgs/pages/{lastId}:
+    get:
+      tags:
+        - TFGs
+      summary: Obtener los siguientes 10 TFGs
+      description: Devuelve una lista de los próximos 10 TFGs a partir de un ID dado.
+      parameters:
+        - name: lastId
+          in: path
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de TFGs obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TFG'
+
+  /tfgs/{id}/file:
+    patch:
+      tags:
+        - TFGs
+      summary: Subir un archivo PDF a un TFG
+      description: Permite subir un archivo PDF y actualizar el campo `Link` del TFG.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Archivo subido correctamente
+
+components:
+  schemas:
+    TFG:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 603d2149e773f2a3990b47f5
+        Año:
+          type: string
+          example: "2023"
+        Titulación de Grado:
+          type: string
+          example: "Ingeniería Informática"
+        Alumno:
+          type: string
+          example: "Juan Pérez"
+        Título TFG:
+          type: string
+          example: "Optimización de Algoritmos en IA"
+        Keywords:
+          type: array
+          items:
+            type: string
+          example: ["Inteligencia Artificial", "Optimización", "Redes Neuronales"]
+        Link:
+          type: string
+          example: "http://servidor.com/archivo.pdf"
+        Tutor:
+          type: string
+          example: "Dr. Roberto García"
+        Abstract/Resumen:
+          type: string
+          example: "Este trabajo explora métodos de optimización en redes neuronales aplicadas a la inteligencia artificial."
+      required:
+        - Año
+        - Titulación de Grado
+        - Alumno
+        - Título TFG
+        - Keywords
+        - Tutor
+        - Abstract/Resumen
