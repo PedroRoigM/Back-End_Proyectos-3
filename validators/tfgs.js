@@ -61,7 +61,7 @@ const validateSearcher = [
     check("tfgTitle").optional().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
     check("advisor").optional().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
     check("abstract").optional().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
-    check("keywords").optional().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
+    check("keywords").optional().isString().withMessage("El campo 'keywords' debe ser una cadena de texto separada."),
     (req, res, next) => validateResults(req, res, next)
 ]
 module.exports = { validateIdMongo, validateCreateTFG, validateUpdateTFG, validateFileTFG, validateSearcher };
