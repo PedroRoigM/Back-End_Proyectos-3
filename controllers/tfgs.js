@@ -41,7 +41,7 @@ const getNextTFGS = async (req, res) => {
 
         let query = {};
         if (filters.year) query.year = filters.year;
-        if (filters.degree) query.degree = filters.degree;
+        if (filters.degree) query.degree = { $regex: filters.degree, $options: "i" };
         if (filters.student) query.student = filters.student;
         if (filters.tfgTitle) query.tfgTitle = { $regex: filters.tfgTitle, $options: "i" };
         if (filters.keywords) query.keywords = { $in: filters.keywords.split(",") };
