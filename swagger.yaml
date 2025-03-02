@@ -13,14 +13,14 @@ paths:
       tags:
         - TFGs
       responses:
-        '200':
+        "200":
           description: Lista de TFGs obtenida correctamente
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TFG'
+                  $ref: "#/components/schemas/TFG"
     post:
       summary: Crear un nuevo TFG
       operationId: createTFG
@@ -31,9 +31,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TFG'
+              $ref: "#/components/schemas/TFGCreateAndUpdate"
       responses:
-        '201':
+        "201":
           description: TFG creado correctamente
   /tfgs/{id}:
     get:
@@ -48,12 +48,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: TFG obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TFG'
+                $ref: "#/components/schemas/TFG"
     patch:
       summary: Actualizar un TFG parcialmente
       operationId: patchTFG
@@ -70,9 +70,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TFG'
+              $ref: "#/components/schemas/TFGCreateAndUpdate"
       responses:
-        '200':
+        "200":
           description: TFG actualizado correctamente
     put:
       summary: Actualizar un TFG completamente
@@ -90,9 +90,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TFG'
+              $ref: "#/components/schemas/TFG"
       responses:
-        '200':
+        "200":
           description: TFG actualizado correctamente
     delete:
       summary: Eliminar un TFG
@@ -106,8 +106,36 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "200":
           description: TFG eliminado correctamente
+  /tfgs/pdf/{id}:
+    patch:
+      summary: Actualizar el PDF de un TFG
+      operationId: patchPDF
+      tags:
+        - TFGs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                filename:
+                  type: string
+      responses:
+        "200":
+          description: PDF actualizado correctamente
+
   /users:
     get:
       summary: Obtener todos los usuarios
@@ -115,14 +143,14 @@ paths:
       tags:
         - Usuarios
       responses:
-        '200':
+        "200":
           description: Lista de usuarios obtenida correctamente
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: "#/components/schemas/User"
     post:
       summary: Crear un nuevo usuario
       operationId: createUser
@@ -133,9 +161,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: "#/components/schemas/User"
       responses:
-        '201':
+        "200":
           description: Usuario creado correctamente
   /users/{id}:
     get:
@@ -150,12 +178,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Usuario obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
 components:
   schemas:
     TFG:
@@ -177,6 +205,25 @@ components:
             type: string
         Link:
           type: string
+        Tutor:
+          type: string
+        Abstract/Resumen:
+          type: string
+    TFGCreateAndUpdate:
+      type: object
+      properties:
+        Año:
+          type: string
+        Titulación de Grado:
+          type: string
+        Alumno:
+          type: string
+        Título TFG:
+          type: string
+        Keywords:
+          type: array
+          items:
+            type: string
         Tutor:
           type: string
         Abstract/Resumen:
