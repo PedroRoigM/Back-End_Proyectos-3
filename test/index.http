@@ -18,35 +18,55 @@ GET https://api-937n.onrender.com/api/tfgs
 GET http://localhost:3000/api/tfgs
 
 ###
-GET http://localhost:3000/api/tfgs/67bee6ce464bc8fbace8093a
+GET http://localhost:3000/api/tfgs/67c428ba0c38e67354d6b7db
 
 ###
 PATCH http://localhost:3000/api/tfgs/67bdc66d8feab4c55cc21e6c
 Content-Type: application/json
 
 {
-    "Titulación de Grado": "TFG de prueba",
-    "Tutor": "Federica Peinado",
-    "Alumno": "Tu madre y tu padre"
+    "tfgTitle": "TFG de prueba",
+    "advisor": "Federica Peinado",
+    "student": "Tu madre y tu padre"
 }
 
 ###
-PUT http://localhost:3000/api/tfgs/67bee6ce464bc8fbace8093a
+PUT http://localhost:3000/api/tfgs/67c428ba0c38e67354d6b7db
 Content-Type: application/json
 
 {
-"Año": "22/23",
-  "Titulación de Grado": "Grado en Diseño de Productos Interactivos (DIPI)",
-  "Alumno": "Paquito",
-  "Título TFG": "ANÁLISIS DE BUENAS PRÁCTICAS EN EL DISEÑO DE INTERFACES PARA JUEGOS DE REALIDAD VIRTUAL",
-  "Keywords": [
+  "year": "22/23",
+  "degree": "Grado en Diseño de Productos Interactivos (DIPI)",
+  "student": "Paquito",
+  "tfgTitle": "ANÁLISIS DE BUENAS PRÁCTICAS EN EL DISEÑO DE INTERFACES PARA JUEGOS DE REALIDAD VIRTUAL",
+  "keywords": [
     "Realidad Virtual",
     "Experiencia de Usuario",
     "Interfaz de Usuario",
     "Inmersión"
   ],
-  "Link": "https://gold-nearby-crawdad-234.mypinata.cloud/ipfs/bafybeieadoddqv7ctr3uf5hi6xuolhsuemzvzgv7gmfhvqhz76m652a6dq",
-  "Tutor": "Álvaro Ortuño Morente",
-  "Abstact/Resumen": "¿Es posible aprender jugando? Este trabajo describe el proceso de creación de un\nvideojuego llamado MasterGame para enseñar conocimientos sobre diseño de niveles\nen el ámbito de los videojuegos, la investigación que hay detrás del proyecto y las\nevidencias proporcionadas por testeadores sobre la eficiencia de la experiencia.\nEl estudio de la teoría sobre diseño de niveles y de las claves para diseñar juegos\nserios educativos consolidan una base que es proyectada en el juego con el fin de ser\nexperimentada de forma práctica por el jugador. Para ello, es necesaria una fase de\ndocumentación que deje claro los objetivos a cumplir y una disposición a realizar\nmodificaciones que sean necesarias para la mejora del proyecto. // Is it possible to learn by playing? This assignment describes the creation process of a\nvideogame called MasterGame to teach about level design skills, the research behind\nthe project and the tester’s evidence about the experience efficiency.\nThe study of level design theory and the keys to design educational serious games\nconsolidate a base that is projected in the game to be experienced in a practical way\nby the player. For this, a documentation phase is necessary that makes clear the\nobjectives to be met and a willingness to make modifications that are necessary to\nimprove the project."
+  "link": "https://gold-nearby-crawdad-234.mypinata.cloud/ipfs/bafybeieadoddqv7ctr3uf5hi6xuolhsuemzvzgv7gmfhvqhz76m652a6dq",
+  "advisor": "Álvaro Ortuño Morente",
+  "abstract": "¿Es posible aprender jugando? Este trabajo describe el proceso de creación de un\nvideojuego llamado MasterGame para enseñar conocimientos sobre diseño de niveles\nen el ámbito de los videojuegos, la investigación que hay detrás del proyecto y las\nevidencias proporcionadas por testeadores sobre la eficiencia de la experiencia.\nEl estudio de la teoría sobre diseño de niveles y de las claves para diseñar juegos\nserios educativos consolidan una base que es proyectada en el juego con el fin de ser\nexperimentada de forma práctica por el jugador. Para ello, es necesaria una fase de\ndocumentación que deje claro los objetivos a cumplir y una disposición a realizar\nmodificaciones que sean necesarias para la mejora del proyecto. // Is it possible to learn by playing? This assignment describes the creation process of a\nvideogame called MasterGame to teach about level design skills, the research behind\nthe project and the tester’s evidence about the experience efficiency.\nThe study of level design theory and the keys to design educational serious games\nconsolidate a base that is projected in the game to be experienced in a practical way\nby the player. For this, a documentation phase is necessary that makes clear the\nobjectives to be met and a willingness to make modifications that are necessary to\nimprove the project."
 }
-# DELETE, CREATE
+
+# patch para enviar un pdf
+###
+PATCH http://localhost:3000/api/tfgs/pdf/67bee6ce464bc8fbace8093a
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="file.pdf"
+Content-Type: application/pdf
+
+< /path/to/your/file.pdf
+--boundary--
+
+
+###
+GET http://localhost:3000/api/tfgs/pages/2
+Content-Type: application/json
+
+{
+  "year": "22/23"
+}

@@ -10,15 +10,13 @@ const validateIdMongo = [
 ]
 
 const validateCreateTFG = [
-    check("Año", "El campo 'Año' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Año' debe ser una cadena de texto."),
-    check("Titulación de Grado", "El campo 'Titulación de Grado' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Titulación de Grado' debe ser una cadena de texto."),
-    check("Alumno", "El campo 'Alumno' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Alumno' debe ser una cadena de texto."),
-    check("Título TFG", "El campo 'Título TFG' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Título TFG' debe ser una cadena de texto."),
-    check("Keywords", "El campo 'Keywords' es obligatorio").not().isEmpty().isArray().withMessage("El campo 'Keywords' debe ser una lista de cadenas de texto."),
-    check("Tutor", "El campo 'Tutor' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Tutor' debe ser una cadena de texto."),
-    check("Abstact/Resumen", "El campo 'Abstract/Resumen' es obligatorio").not().isEmpty().isString().withMessage("El campo 'Abstract/Resumen' debe ser una cadena de texto."),
-
-    // El campo link vendra en un patch que se encargará de subirlo al endpoint, por lo que no se pide para crear un TFG
+    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("degree", "El campo 'degree' es obligatorio").not().isEmpty().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
+    check("student", "El campo 'student' es obligatorio").not().isEmpty().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
+    check("tfgTitle", "El campo 'tfgTitle' es obligatorio").not().isEmpty().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
+    check("keywords", "El campo 'keywords' es obligatorio").not().isEmpty().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
+    check("advisor", "El campo 'advisor' es obligatorio").not().isEmpty().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
+    check("abstract", "El campo 'abstract' es obligatorio").not().isEmpty().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
 
     (req, res, next) => validateResults(req, res, next)
 ]
@@ -26,26 +24,44 @@ const validateCreateTFG = [
 // Validación para actualizar un TFG, se valida que los campos sean opcionales y que cumplan con el tipo de dato esperado
 // Se valida que los campos sean opcionales para que no sea obligatorio enviar todos los campos en el patch
 const validateUpdateTFG = [
-    check("Año").optional().isString().withMessage("El campo 'Año' debe ser una cadena de texto."),
-    check("Titulación de Grado").optional().isString().withMessage("El campo 'Titulación de Grado' debe ser una cadena de texto."),
-    check("Alumno").optional().isString().withMessage("El campo 'Alumno' debe ser una cadena de texto."),
-    check("Título TFG").optional().isString().withMessage("El campo 'Título TFG' debe ser una cadena de texto."),
-    check("Keywords").optional().isArray().withMessage("El campo 'Keywords' debe ser una lista de cadenas de texto."),
-    check("Link").optional().isString().withMessage("El campo 'Link' debe ser una cadena de texto."),
-    check("Tutor").optional().isString().withMessage("El campo 'Tutor' debe ser una cadena de texto."),
-    check("Abstract/Resumen").optional().isString().withMessage("El campo 'Abstract/Resumen' debe ser una cadena de texto."),
+    check("year").optional({ checkFalsy: true }).isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("degree").optional({ checkFalsy: true }).isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
+    check("student").optional({ checkFalsy: true }).isString().withMessage("El campo 'student' debe ser una cadena de texto."),
+    check("tfgTitle").optional({ checkFalsy: true }).isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
+    check("keywords").optional({ checkFalsy: true }).isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
+    check("link").optional({ checkFalsy: true }).isString().withMessage("El campo 'link' debe ser una cadena de texto."),
+    check("advisor").optional({ checkFalsy: true }).isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
+    check("abstract").optional({ checkFalsy: true }).isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
     (req, res, next) => validateResults(req, res, next)
 ]
 
 // Validación para subir un archivo PDF en el patch de un TFG, se valida que el archivo sea un PDF para luego subirlo al endpoint
 const validateFileTFG = [
-    // Se valida que el archivo sea un PDF
-    check("file", "El archivo es obligatorio").not().isEmpty()
-        .matches(/\.pdf$/).withMessage("El archivo debe ser un PDF válido."),
+    check("file", "El archivo es obligatorio").custom((value, { req }) => {
+        if (!req.file) {
+            throw new Error("El archivo es obligatorio.");
+        }
+        if (req.file.mimetype !== "application/pdf") {
+            throw new Error("El archivo debe ser un PDF.");
+        }
+        return true;
+    }),
+    check("name", "El nombre del archivo es obligatorio").not().isEmpty()
+        .isString().withMessage("El nombre del archivo debe ser una cadena de texto.")
+        .isLength({ min: 10, max: 50 }).withMessage("El nombre del archivo debe tener entre 10 y 50 caracteres."),
+    (req, res, next) => validateResults(req, res, next)
+];
+
+const validateSearcher = [
+    check("page_number").not().isEmpty().withMessage("El campo 'page_number' es obligatorio.")
+        .isInt({ min: 1 }).withMessage("El campo 'page_number' debe ser un número entero mayor que 0."),
+    check("year").optional().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("degree").optional().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
+    check("student").optional().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
+    check("tfgTitle").optional().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
+    check("advisor").optional().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
+    check("abstract").optional().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
+    check("keywords").optional().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
     (req, res, next) => validateResults(req, res, next)
 ]
-const validateIdForPage = [
-    check("lastId").optional().isMongoId().withMessage("El campo 'lastId' debe ser un ID de MongoDB válido."),
-    (req, res, next) => validateResults(req, res, next)
-]
-module.exports = { validateIdMongo, validateCreateTFG, validateUpdateTFG, validateFileTFG, validateIdForPage };
+module.exports = { validateIdMongo, validateCreateTFG, validateUpdateTFG, validateFileTFG, validateSearcher };

@@ -5,6 +5,8 @@
 */
 const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
+const multer = require("multer");
+
 
 // Petición GET para obtener todos los tfgs
 // Se obtiene una lista de todos los TFGs que hay en la base de datos
@@ -32,19 +34,31 @@ const getTFG = async (req, res) => {
 // Se obtiene una lista de los 10 siguientes TFGs que hay en la base de datos
 const getNextTFGS = async (req, res) => {
     try {
-        const { lastId } = req.params
-        // Si no se envía un lastId se obtienen los primeros 10 TFGs
-        if (!lastId) {
-            const tfgs = await tfgsModel.find().limit(10)
-            res.status(200).json(tfgs)
-            return
-        }
-        const tfgs = await tfgsModel.find({ _id: { $gt: lastId } }).limit(10)
-        res.status(200).json(tfgs)
+        const { page_number } = req.params;
+
+        // Obtener filtros tanto de req.query como de req.body
+        const filters = { ...req.query, ...req.body };
+
+        let query = {};
+        if (filters.year) query.year = filters.year;
+        if (filters.degree) query.degree = filters.degree;
+        if (filters.student) query.student = filters.student;
+        if (filters.tfgTitle) query.tfgTitle = { $regex: filters.tfgTitle, $options: "i" };
+        if (filters.keywords) query.keywords = { $in: filters.keywords.split(",") };
+        if (filters.advisor) query.advisor = filters.advisor;
+        if (filters.abstract) query.abstract = { $regex: filters.abstract, $options: "i" };
+
+        console.log("Query generada:", query);
+
+        const page = parseInt(page_number, 10) || 1;
+        const tfgs = await tfgsModel.find(query).skip((page - 1) * 10).limit(10);
+
+        res.status(200).json(tfgs);
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 // Petición POST para crear un TFG
 // Se crea un TFG con los campos que se envíen en el body
@@ -100,10 +114,19 @@ const deleteTFG = async (req, res) => {
 // Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
 const patchFileTFG = async (req, res) => {
     try {
-        const { id } = req.params
-        const { file } = req
-        const tfg = await tfgsModel.findByIdAndUpdate(id, { file: file.path }, { new: true })
-        res.send(tfg)
+        const { id, fileName } = req.params
+        const fileBuffer = req.file.buffer
+        const pinataResponse = await uploadToPinata(fileBuffer, fileName)
+        const ipfsFile = pinataResponse.IpfsHash
+        const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`
+
+        const fileData = {
+            filename: fileName,
+            url: ipfs_url
+        }
+
+        //const tfg = await tfgsModel.findByIdAndUpdate(id, { file: file.path }, { new: true })
+        res.send(fileData)
     }
     catch (error) {
         res.status(500).json({ message: error.message })
