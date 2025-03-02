@@ -177,7 +177,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type: array
           description: Palabras clave separadas por comas (ej. "IA,redes,seguridad").
         - name: advisor
           in: query
