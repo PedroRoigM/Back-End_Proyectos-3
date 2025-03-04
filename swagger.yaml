@@ -110,7 +110,7 @@ paths:
           description: TFG eliminado correctamente
   /tfgs/pdf/{id}:
     patch:
-      summary: Actualizar el PDF de un TFG
+      summary: NO FUNCIONA POR AHORA!!!! Actualizar el PDF de un TFG
       operationId: patchPDF
       tags:
         - TFGs
