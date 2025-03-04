@@ -6,7 +6,7 @@
 const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
 const multer = require("multer");
-const uploadToPinata = require("../utils/uploadToPinata");
+const uploadToPinata = require("../utils/UploadToPinata");
 
 const PUBLIC_URL = process.env.PUBLIC_URL
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
