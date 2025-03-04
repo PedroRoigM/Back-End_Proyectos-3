@@ -1,5 +1,6 @@
-const pinataApiKey = process.env.PINATA_KEY
-const pinataSecretApiKey = process.env.PINATA_SECRET
+const config = require('../config');
+const pinataApiKey = config.PINATA_API_KEY
+const pinataSecretApiKey = config.PINATA_SECRET_KEY
 async function uploadToPinata(fileBuffer, fileName) {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
     let data = new FormData();
@@ -16,14 +17,14 @@ async function uploadToPinata(fileBuffer, fileName) {
     data.append('pinataOptions', options);
     try {
         console.log("URL: " + url);
-        console.log("pinaApiKey: " + process.env.PINATA_KEY);
-        console.log("pinataSecretApiKey: " + process.env.PINATA_SECRET);
+        console.log("pinaApiKey: " + pinataApiKey);
+        console.log("pinataSecretApiKey: " + pinataSecretApiKey);
         const response = await fetch(url, {
             method: 'POST',
             body: data,
             headers: {
-                'pinata_api_key': process.env.PINATA_KEY,
-                'pinata_secret_api_key': process.env.PINATA_SECRET
+                'pinata_api_key': pinataApiKey,
+                'pinata_secret_api_key': pinataSecretApiKey
             }
         });
         if (!response.ok) {
