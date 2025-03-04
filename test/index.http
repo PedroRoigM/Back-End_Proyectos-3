@@ -70,3 +70,33 @@ Content-Type: application/json
 {
   "year": "22/23"
 }
+
+### 
+POST http://localhost:3000/api/tfgs/
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="data"
+Content-Type: application/json
+
+{
+  "year": "22/23",
+  "degree": "Grado en Diseño de Productos Interactivos (DIPI)",
+  "student": "Paquito",
+  "tfgTitle": "ANÁLISIS DE BUENAS PRÁCTICAS EN EL DISEÑO DE INTERFACES PARA JUEGOS DE REALIDAD VIRTUAL",
+  "keywords": [
+    "Realidad Virtual",
+    "Experiencia de Usuario",
+    "Interfaz de Usuario",
+    "Inmersión"
+  ],
+  "advisor": "Álvaro Ortuño Morente",
+  "abstract": "prueba"
+}
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="file.pdf"
+Content-Type: application/pdf
+
+< ./file.pdf
+--boundary--

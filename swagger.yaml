@@ -29,12 +29,32 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/TFGCreateAndUpdate"
+              type: object
+              properties:
+                data:
+                  type: string
+                  format: json
+                  description: "Datos del TFG en formato JSON"
+                  example:
+                    year: "string"
+                    degree: "string"
+                    student: "string"
+                    tfgTitle: "string"
+                    keywords: "string, string"
+                    advisor: "string"
+                    abstract: "string"
+                file:
+                  type: string
+                  format: binary
+                  description: "Archivo PDF del TFG"
       responses:
         "201":
           description: TFG creado correctamente
+        "400":
+          description: Error de validación en los datos proporcionados
+
   /tfgs/{id}:
     get:
       summary: Obtener un TFG por ID
@@ -276,6 +296,31 @@ components:
           type: string
         Abstract/Resumen:
           type: string
+    TFGpost:
+      type: object
+      properties:
+        id:
+          type: string
+        Año:
+          type: string
+        Titulación de Grado:
+          type: string
+        Alumno:
+          type: string
+        Título TFG:
+          type: string
+        Keywords:
+          type: array
+          items:
+            type: string
+        File:
+          type: string
+          format: binary
+        Tutor:
+          type: string
+        Abstract/Resumen:
+          type: string
+
     TFGCreateAndUpdate:
       type: object
       properties:

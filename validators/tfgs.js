@@ -17,7 +17,15 @@ const validateCreateTFG = [
     check("keywords", "El campo 'keywords' es obligatorio").not().isEmpty().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
     check("advisor", "El campo 'advisor' es obligatorio").not().isEmpty().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
     check("abstract", "El campo 'abstract' es obligatorio").not().isEmpty().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
-
+    check("file", "El archivo es obligatorio").custom((value, { req }) => {
+        if (!req.file) {
+            throw new Error("El archivo es obligatorio.");
+        }
+        if (req.file.mimetype !== "application/pdf") {
+            throw new Error("El archivo debe ser un PDF.");
+        }
+        return true;
+    }),
     (req, res, next) => validateResults(req, res, next)
 ]
 

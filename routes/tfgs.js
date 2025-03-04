@@ -15,7 +15,7 @@ const {
 router.get('/', getTFGs);
 router.get('/:id', validateIdMongo, getTFG);
 router.get('/pages/:page_number', validateSearcher, getNextTFGS);
-router.post('/', validateCreateTFG, createTFG);
+router.post('/', upload.single('file'), createTFG);
 router.patch('/:id', validateIdMongo, validateUpdateTFG, patchTFG);
 router.patch('/pdf/:id', validateIdMongo, validateFileTFG, uploadMiddlewareMemory.single("file"), patchFileTFG);
 router.put('/:id', validateIdMongo, validateUpdateTFG, putTFG);

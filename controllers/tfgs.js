@@ -6,7 +6,10 @@
 const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
 const multer = require("multer");
+const uploadToPinata = require("../utils/uploadToPinata");
 
+const PUBLIC_URL = process.env.PUBLIC_URL
+const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
 
 // Petición GET para obtener todos los tfgs
 // Se obtiene una lista de todos los TFGs que hay en la base de datos
@@ -65,13 +68,57 @@ const getNextTFGS = async (req, res) => {
 // Tras el POST quedará recibir el Link al archivo en el endpoint
 const createTFG = async (req, res) => {
     try {
-        const body = matchedData(req)
-        const data = await tfgsModel.create(body)
-        res.status(201).json(data)
+        let body = {};
+
+        // Si los datos vienen en multipart/form-data
+        if (req.is('multipart/form-data')) {
+            // Leer los datos JSON que vienen dentro del campo "data"
+            if (req.body.data) {
+                // Si los datos de "data" son un string JSON, parsearlos
+                try {
+                    body = JSON.parse(req.body.data);
+                } catch (error) {
+                    return res.status(400).json({ message: 'El campo "data" no contiene JSON válido' });
+                }
+            }
+
+            // Si se ha enviado un archivo, procesarlo
+            if (req.file) {
+                const fileBuffer = req.file.buffer;
+                const fileName = req.file.originalname;
+                const pinataResponse = await uploadToPinata(fileBuffer, fileName);
+                const ipfsFile = pinataResponse.IpfsHash;
+                const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`;
+                body.link = ipfs_url;
+            }
+        } else {
+            return res.status(400).json({ message: "Formato de solicitud no soportado" });
+        }
+
+        // **Manejo de keywords**
+        if (typeof body.keywords === 'string') {
+            body.keywords = body.keywords.split(",").map(kw => kw.trim());
+        } else if (Array.isArray(body.keywords)) {
+            // No hacer nada si ya es un array
+        } else {
+            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
+        }
+
+        // Imprimir los datos para revisar
+        console.log(body);
+
+        // Crear el nuevo TFG
+        const data = await tfgsModel.create(body);
+        res.status(201).json(data);
+
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        console.error("Error en createTFG:", error);
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
+
+
 // Petición PATCH para actualizar un TFG, se actualiza solo los campos que se envíen en el body
 // En este caso se actualiza solo los campos que se envíen en el body, por lo que no es necesario enviar todos los campos del TFG
 const patchTFG = async (req, res) => {
