@@ -16,14 +16,14 @@ async function uploadToPinata(fileBuffer, fileName) {
     data.append('pinataOptions', options);
     try {
         console.log("URL: " + url);
-        console.log("pinaApiKey: " + pinataApiKey);
-        console.log("pinataSecretApiKey: " + pinataSecretApiKey);
+        console.log("pinaApiKey: " + process.env.PINATA_KEY);
+        console.log("pinataSecretApiKey: " + process.env.PINATA_SECRET);
         const response = await fetch(url, {
             method: 'POST',
             body: data,
             headers: {
-                'pinata_api_key': pinataApiKey,
-                'pinata_secret_api_key': pinataSecretApiKey
+                'pinata_api_key': process.env.PINATA_KEY,
+                'pinata_secret_api_key': process.env.PINATA_SECRET
             }
         });
         if (!response.ok) {
