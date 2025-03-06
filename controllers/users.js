@@ -9,40 +9,76 @@
 
 // Obtener el modelo de usuarios
 const { usersModel } = require('../models')
+const { matchedData } = require('express-validator')
+const { handleHttpError } = require('../utils/handleError')
 
 // Petición GET para obtener todos los usuarios
 const getUsers = async (req, res) => {
     try {
-        const users = await usersModel.find()
-        res.status(200).json(users)
-    } catch (error) {
-        res.status(500).json({ message: error.message })
+        const user = req.user
+        const data = await usersModel.find({})
+        res.send( {data, user} )
+    } catch (err) {
+        handleHttpError(res, "ERROR_GET_USERS", 403)
     }
 }
 
 // Petición GET para obtener un usuario en específico según su ID
 const getUser = async (req, res) => {
     try {
-        const user = await usersModel.findById(req.params.id)
-        res.status(200).json(user)
-    } catch (error) {
-        res.status(500).json({ message: error.message })
+        const { user } = matchedData(req)
+        const data = await usersModel.findById(user)
+        if(!data) {
+            return handleHttpError(res, "USER_NOT_EXISTS", 404) 
+        }
+        res.send(data)
+    } catch (err) {
+        handleHttpError(res, "ERROR_GET_USER")
     }
 }
 
 // Petición POST para crear un usuario
 const createUser = async (req, res) => {
     try {
-        const user = new usersModel(req.body)
-        await user.save()
-        res.status(201).json(user)
-    } catch (error) {
-        res.status(500).json({ message: error.message })
+        const user = matchedData(req)
+        const data = await usersModel.create(user)
+        res.send(data)
+    } catch (err) {
+        handleHttpError(res, "ERROR_CREATE_USER")
+    }
+}
+
+const updateUser = async (req, res) => {
+    try {
+        const { user } = matchedData(req)
+        const body = req.body
+        const data = await usersModel.findByIdAndUpdate(user, body, { new: true })
+        if(!data) {
+            return handleHttpError(res, "USER_NOT_EXISTS", 404)
+        }
+        res.send(data)
+    } catch (err) {
+        handleHttpError(res, "ERROR_UPDATE_USER")
+    }
+}
+
+const deleteUser = async (req, res) => {
+    try {
+        const { user } = matchedData(req)
+        const data = await usersModel.delete( { _id: user } )
+        if(!data) {
+            return handleHttpError(res, "USER_NOT_EXISTS", 404)
+        }
+        res.send( { message: 'User deleted succesfully' } )
+    } catch (err) {
+        handleHttpError(res, "ERROR_DELETE_USER")
     }
 }
 
 module.exports = {
     getUsers,
     getUser,
-    createUser
+    createUser,
+    updateUser,
+    deleteUser
 }

@@ -1,3 +1,4 @@
+
 GET https://api-937n.onrender.com/api/users
 
 ###
@@ -9,6 +10,23 @@ Content-Type: application/json
     "email": "john.doe@example.com",
     "password": "securepassword123",
     "role": "alumno"
+}
+
+###
+POST http://localhost:3000/api/tfgs
+Content-Type: application/json
+
+{
+  "year": "2025",
+  "degree": "INSO",
+  "student": "Eduardo Rodriguez",
+  "tfgTitle": "Prueba de TFG",
+  "keywords": [
+    "prueba"
+  ],
+  "link": "https://gold-nearby-crawdad-234.mypinata.cloud/ipfs/bafybeieadoddqv7ctr3uf5hi6xuolhsuemzvzgv7gmfhvqhz76m652a6dq",
+  "advisor": "Pedro Roig",
+  "abstract": "esto es una prueba"
 }
 
 ###
@@ -100,3 +118,26 @@ Content-Type: application/pdf
 
 < ./file.pdf
 --boundary--
+
+###
+POST http://localhost:3000/api/auth/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Edu",
+  "email": "eduardo@gmail.com",
+  "password": "edu12345"
+}
+
+###
+POST http://localhost:3000/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "eduardo@gmail.com",
+  "password": "edu12345"
+}
+
+###
+GET http://localhost:3000/api/users HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2M5NmMyN2U0M2Y4YjU3NGZmOTFjZDUiLCJpYXQiOjE3NDEyNTM3NDQsImV4cCI6MTc0MTI2MDk0NH0.g5J8yCwciAHKw9qARWdx3my1nVI_andO3n1QScPt9-I
