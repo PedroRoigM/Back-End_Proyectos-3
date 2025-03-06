@@ -70,19 +70,19 @@ Content-Type: application/json
 
 # patch para enviar un pdf
 ###
-PATCH http://localhost:3000/api/tfgs/pdf/67bee6ce464bc8fbace8093a
+PATCH http://localhost:3000/api/tfgs/pdf/67c6bd2fc56dc6b5bf9ef91d
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="file"; filename="file.pdf"
+Content-Disposition: form-data; name="file"; filename="file2.pdf"
 Content-Type: application/pdf
 
-< /path/to/your/file.pdf
+< ./file2.pdf
 --boundary--
 
 
 ###
-GET http://localhost:3000/api/tfgs/pages/2
+GET http://localhost:3000/api/tfgs/pages/1
 Content-Type: application/json
 
 {
@@ -102,12 +102,7 @@ Content-Type: application/json
   "degree": "Grado en Diseño de Productos Interactivos (DIPI)",
   "student": "Paquito",
   "tfgTitle": "ANÁLISIS DE BUENAS PRÁCTICAS EN EL DISEÑO DE INTERFACES PARA JUEGOS DE REALIDAD VIRTUAL",
-  "keywords": [
-    "Realidad Virtual",
-    "Experiencia de Usuario",
-    "Interfaz de Usuario",
-    "Inmersión"
-  ],
+  "keywords": ["Realidad Virtual", "Experiencia de Usuario", "Interfaz de Usuario", "Inmersión"],
   "advisor": "Álvaro Ortuño Morente",
   "abstract": "prueba"
 }
@@ -118,26 +113,3 @@ Content-Type: application/pdf
 
 < ./file.pdf
 --boundary--
-
-###
-POST http://localhost:3000/api/auth/register HTTP/1.1
-Content-Type: application/json
-
-{
-  "name": "Edu",
-  "email": "eduardo@gmail.com",
-  "password": "edu12345"
-}
-
-###
-POST http://localhost:3000/api/auth/login HTTP/1.1
-Content-Type: application/json
-
-{
-  "email": "eduardo@gmail.com",
-  "password": "edu12345"
-}
-
-###
-GET http://localhost:3000/api/users HTTP/1.1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2M5NmMyN2U0M2Y4YjU3NGZmOTFjZDUiLCJpYXQiOjE3NDEyNTM3NDQsImV4cCI6MTc0MTI2MDk0NH0.g5J8yCwciAHKw9qARWdx3my1nVI_andO3n1QScPt9-I

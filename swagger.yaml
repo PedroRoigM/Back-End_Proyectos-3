@@ -22,38 +22,21 @@ paths:
                 items:
                   $ref: "#/components/schemas/TFG"
     post:
-      summary: Crear un nuevo TFG
+      summary: Crear un nuevo TFG - Esta petición inicializa el Link como undefined, requiere un patch para añadir el PDF
       operationId: createTFG
       tags:
         - TFGs
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              properties:
-                data:
-                  type: string
-                  format: json
-                  description: "Datos del TFG en formato JSON"
-                  example:
-                    year: "string"
-                    degree: "string"
-                    student: "string"
-                    tfgTitle: "string"
-                    keywords: "string, string"
-                    advisor: "string"
-                    abstract: "string"
-                file:
-                  type: string
-                  format: binary
-                  description: "Archivo PDF del TFG"
+              type: array
+              items:
+                $ref: "#/components/schemas/TFGCreateAndUpdate"
       responses:
         "201":
-          description: TFG creado correctamente
-        "400":
-          description: Error de validación en los datos proporcionados
+          description: "TFG creado correctamente"
 
   /tfgs/{id}:
     get:
@@ -130,7 +113,7 @@ paths:
           description: TFG eliminado correctamente
   /tfgs/pdf/{id}:
     patch:
-      summary: NO FUNCIONA POR AHORA!!!! Actualizar el PDF de un TFG
+      summary: Actualizar el PDF de un TFG
       operationId: patchPDF
       tags:
         - TFGs
@@ -296,31 +279,6 @@ components:
           type: string
         Abstract/Resumen:
           type: string
-    TFGpost:
-      type: object
-      properties:
-        id:
-          type: string
-        Año:
-          type: string
-        Titulación de Grado:
-          type: string
-        Alumno:
-          type: string
-        Título TFG:
-          type: string
-        Keywords:
-          type: array
-          items:
-            type: string
-        File:
-          type: string
-          format: binary
-        Tutor:
-          type: string
-        Abstract/Resumen:
-          type: string
-
     TFGCreateAndUpdate:
       type: object
       properties:

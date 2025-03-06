@@ -7,8 +7,8 @@ const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
 const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
+const { link } = require('fs');
 
-const PUBLIC_URL = process.env.PUBLIC_URL
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
 
 // Petición GET para obtener todos los tfgs
@@ -81,16 +81,8 @@ const createTFG = async (req, res) => {
                     return res.status(400).json({ message: 'El campo "data" no contiene JSON válido' });
                 }
             }
-
+            body.link = "undefined"; // Inicializar el link como "undefined" para evitar errores
             // Si se ha enviado un archivo, procesarlo
-            if (req.file) {
-                const fileBuffer = req.file.buffer;
-                const fileName = req.file.originalname;
-                const pinataResponse = await uploadToPinata(fileBuffer, fileName);
-                const ipfsFile = pinataResponse.IpfsHash;
-                const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`;
-                body.link = ipfs_url;
-            }
         } else {
             return res.status(400).json({ message: "Formato de solicitud no soportado" });
         }
@@ -117,15 +109,26 @@ const createTFG = async (req, res) => {
     }
 };
 
-
-
 // Petición PATCH para actualizar un TFG, se actualiza solo los campos que se envíen en el body
 // En este caso se actualiza solo los campos que se envíen en el body, por lo que no es necesario enviar todos los campos del TFG
 const patchTFG = async (req, res) => {
     try {
         const { id } = req.params
-        const { body } = matchedData(req)
-        const tfg = await tfgsModel.findByIdAndUpdate(id, body, { new: true })
+        const link = { link: "undefined" }
+        if (req.file) {
+            const fileBuffer = req.file.buffer;
+            const fileName = req.file.originalname;
+            const pinataResponse = await uploadToPinata(fileBuffer, fileName);
+            const ipfsFile = pinataResponse.IpfsHash;
+            const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`;
+            link.link = ipfs_url;
+
+            // eliminar el file del body
+            delete req.file;
+
+        }
+
+        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: link }, { new: true })
         res.send(tfg)
     } catch (error) {
         res.status(500).json({ message: error.message })

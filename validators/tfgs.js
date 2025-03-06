@@ -10,13 +10,13 @@ const validateIdMongo = [
 ]
 
 const validateCreateTFG = [
-    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
-    check("degree", "El campo 'degree' es obligatorio").not().isEmpty().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
-    check("student", "El campo 'student' es obligatorio").not().isEmpty().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
-    check("tfgTitle", "El campo 'tfgTitle' es obligatorio").not().isEmpty().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
-    check("keywords", "El campo 'keywords' es obligatorio").not().isEmpty().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
-    check("advisor", "El campo 'advisor' es obligatorio").not().isEmpty().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
-    check("abstract", "El campo 'abstract' es obligatorio").not().isEmpty().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
+    check("data.year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("data.degree", "El campo 'degree' es obligatorio").not().isEmpty().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
+    check("data.student", "El campo 'student' es obligatorio").not().isEmpty().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
+    check("data.tfgTitle", "El campo 'tfgTitle' es obligatorio").not().isEmpty().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
+    check("data.keywords", "El campo 'keywords' es obligatorio").not().isEmpty().isArray().withMessage("El campo 'keywords' debe ser una lista de cadenas de texto."),
+    check("data.advisor", "El campo 'advisor' es obligatorio").not().isEmpty().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
+    check("data.abstract", "El campo 'abstract' es obligatorio").not().isEmpty().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
     check("file", "El archivo es obligatorio").custom((value, { req }) => {
         if (!req.file) {
             throw new Error("El archivo es obligatorio.");
@@ -27,7 +27,7 @@ const validateCreateTFG = [
         return true;
     }),
     (req, res, next) => validateResults(req, res, next)
-]
+];
 
 // Validación para actualizar un TFG, se valida que los campos sean opcionales y que cumplan con el tipo de dato esperado
 // Se valida que los campos sean opcionales para que no sea obligatorio enviar todos los campos en el patch

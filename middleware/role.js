@@ -4,7 +4,7 @@ const checkRole = (roles) => (req, res, next) => {
         const { user } = req
         const userRole = user.role
         const checkValueRole = roles.includes(userRole)
-        if(!checkValueRole) {
+        if (!checkValueRole) {
             handleHttpError(res, "NOT_ALLOWED", 403)
             return
         }
@@ -14,4 +14,4 @@ const checkRole = (roles) => (req, res, next) => {
     }
 }
 
-module.exports = { checkRole }
+module.exports = checkRole 

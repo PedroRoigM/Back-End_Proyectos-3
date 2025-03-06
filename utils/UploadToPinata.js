@@ -16,9 +16,6 @@ async function uploadToPinata(fileBuffer, fileName) {
     });
     data.append('pinataOptions', options);
     try {
-        console.log("URL: " + url);
-        console.log("pinaApiKey: " + pinataApiKey);
-        console.log("pinataSecretApiKey: " + pinataSecretApiKey);
         const response = await fetch(url, {
             method: 'POST',
             body: data,

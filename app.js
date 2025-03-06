@@ -19,8 +19,4 @@ app.use("/api", require("./routes")) //Lee routes/index.js por defecto
 app.listen(port, () => {
     console.log("Servidor escuchando en el puerto " + port)
     dbConnect()
-    console.log("Configuración de la aplicación:");
-    console.log(config.PINATA_API_KEY);
-    console.log(config.PINATA_SECRET_KEY);
-    console.log(config.DB_URI)
 })

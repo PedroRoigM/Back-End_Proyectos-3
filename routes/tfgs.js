@@ -15,9 +15,9 @@ const {
 router.get('/', getTFGs);
 router.get('/:id', validateIdMongo, getTFG);
 router.get('/pages/:page_number', validateSearcher, getNextTFGS);
-router.post('/', upload.single('file'), createTFG);
-router.patch('/:id', validateIdMongo, validateUpdateTFG, patchTFG);
-router.patch('/pdf/:id', validateIdMongo, validateFileTFG, uploadMiddlewareMemory.single("file"), patchFileTFG);
+router.post('/', validateCreateTFG, createTFG);
+router.patch('/pdf/:id', upload.single("file"), validateIdMongo, patchTFG);
+//router.patch('/:id', validateIdMongo, upload.single("file"), validateFileTFG, patchFileTFG);
 router.put('/:id', validateIdMongo, validateUpdateTFG, putTFG);
 router.delete('/:id', validateIdMongo, deleteTFG);
 
