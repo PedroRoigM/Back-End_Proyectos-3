@@ -50,9 +50,8 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
     try {
-        const { user } = matchedData(req)
-        const body = req.body
-        const data = await usersModel.findByIdAndUpdate(user, body, { new: true })
+        const { id, ...body } = matchedData(req)
+        const data = await usersModel.findByIdAndUpdate(id, body, { new: true })
         if(!data) {
             return handleHttpError(res, "USER_NOT_EXISTS", 404)
         }
@@ -74,6 +73,8 @@ const deleteUser = async (req, res) => {
         handleHttpError(res, "ERROR_DELETE_USER")
     }
 }
+
+// TODO: updateRole
 
 module.exports = {
     getUsers,

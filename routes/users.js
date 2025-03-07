@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, getUser, createUser } = require('../controllers/users');
+const { getUsers, getUser, createUser, updateUser } = require('../controllers/users');
 const authMiddleware = require('../middleware/session');
 const checkRole = require('../middleware/role');
+const { validatorGetUser, validatorUpdateUser } = require('../validators/users');
 
 router.get("/", authMiddleware, getUsers)
-router.get('/:id', authMiddleware, getUser);
-router.post('/', authMiddleware, checkRole(["admin"]), createUser);
+router.patch('/:id', authMiddleware, checkRole(["administrador"]), validatorGetUser, validatorUpdateUser, updateUser);
 
 
 module.exports = router;
