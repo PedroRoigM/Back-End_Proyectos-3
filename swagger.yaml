@@ -217,6 +217,13 @@ paths:
       operationId: getUsers
       tags:
         - Usuarios
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Token de autenticación
       responses:
         "200":
           description: Lista de usuarios obtenida correctamente
@@ -226,6 +233,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+  /auth/register:
     post:
       summary: Crear un nuevo usuario
       operationId: createUser
@@ -240,6 +248,26 @@ paths:
       responses:
         "200":
           description: Usuario creado correctamente
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      operationId: loginUser
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Usuario logueado correctamente
   /users/{id}:
     get:
       summary: Obtener un usuario por ID
@@ -306,14 +334,9 @@ components:
     User:
       type: object
       properties:
-        id:
-          type: string
         name:
           type: string
         email:
           type: string
         password:
           type: string
-        role:
-          type: string
-          enum: ["alumno", "profesor", "tutor", "administrador"]
