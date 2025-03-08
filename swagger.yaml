@@ -57,26 +57,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TFG"
-    patch:
-      summary: Actualizar un TFG parcialmente
-      operationId: patchTFG
-      tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TFGCreateAndUpdate"
-      responses:
-        "200":
-          description: TFG actualizado correctamente
     put:
       summary: Actualizar un TFG completamente
       operationId: putTFG
@@ -205,7 +185,32 @@ paths:
                   $ref: "#/components/schemas/TFG"
         "500":
           description: Error interno del servidor
-
+  /tfgs/verify/{id}:
+    patch:
+      summary: Verificar un TFG
+      operationId: patchVerify
+      tags:
+        - TFGs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verified:
+                  type: boolean
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: TFG verificado correctamente
   /users:
     get:
       summary: Obtener todos los usuarios

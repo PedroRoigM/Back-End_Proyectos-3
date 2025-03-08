@@ -4,21 +4,21 @@ const multer = require('multer'); // Primero importa multer
 const storage = multer.memoryStorage(); // Luego usa multer
 const upload = multer({ storage });
 
-const { uploadMiddlewareMemory } = require("../utils/handleStorage");
 const {
-    getTFGs, getTFG, patchTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS
+    getTFGs, getTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS, patchVerifiedTFG
 } = require('../controllers/tfgs');
 const {
-    validateIdMongo, validateCreateTFG, validateUpdateTFG, validateFileTFG, validateSearcher
+    validateIdMongo, validateCreateTFG, validatePatchTFG, validatePutTFG, validateSearcher, validateVerify
 } = require('../validators/tfgs');
 
 router.get('/', getTFGs);
 router.get('/:id', validateIdMongo, getTFG);
 router.get('/pages/:page_number', validateSearcher, getNextTFGS);
 router.post('/', validateCreateTFG, createTFG);
-router.patch('/pdf/:id', upload.single("file"), validateIdMongo, patchTFG);
-//router.patch('/:id', validateIdMongo, upload.single("file"), validateFileTFG, patchFileTFG);
-router.put('/:id', validateIdMongo, validateUpdateTFG, putTFG);
+router.put('/:id', validateIdMongo, validatePutTFG, putTFG);
+//router.patch('/:id', validateIdMongo, validatePatchTFG, patchFileTFG);
+router.patch('/pdf/:id', upload.single("file"), validateIdMongo, patchFileTFG);
+router.patch('/verify/:id', validateIdMongo, validateVerify, patchVerifiedTFG);
 router.delete('/:id', validateIdMongo, deleteTFG);
 
 module.exports = router;

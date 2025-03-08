@@ -5,5 +5,6 @@ module.exports = {
     DB_URI: process.env.DB_URI,
     PINATA_API_KEY: process.env.PINATA_KEY,
     PINATA_SECRET_KEY: process.env.PINATA_SECRET,
-    PINATA_GATEWAY_URL: process.env.PINATA_GATEWAY_URL
+    PINATA_GATEWAY_URL: process.env.PINATA_GATEWAY_URL,
+    SHAREPOINT_URL: process.env.SHARE_POINT_URL,
 };

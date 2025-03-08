@@ -7,7 +7,6 @@ const { matchedData } = require('express-validator')
 const { tfgsModel } = require('../models')
 const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
-const { link } = require('fs');
 
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
 
@@ -50,7 +49,7 @@ const getNextTFGS = async (req, res) => {
         if (filters.keywords) query.keywords = { $in: filters.keywords.split(",") };
         if (filters.advisor) query.advisor = filters.advisor;
         if (filters.abstract) query.abstract = { $regex: filters.abstract, $options: "i" };
-
+        query.verified = true;
         console.log("Query generada:", query);
 
         const page = parseInt(page_number, 10) || 1;
@@ -68,24 +67,25 @@ const getNextTFGS = async (req, res) => {
 // Tras el POST quedará recibir el Link al archivo en el endpoint
 const createTFG = async (req, res) => {
     try {
-        let body = {};
-
-        // Si los datos vienen en multipart/form-data
-        if (req.is('multipart/form-data')) {
-            // Leer los datos JSON que vienen dentro del campo "data"
-            if (req.body.data) {
-                // Si los datos de "data" son un string JSON, parsearlos
-                try {
-                    body = JSON.parse(req.body.data);
-                } catch (error) {
-                    return res.status(400).json({ message: 'El campo "data" no contiene JSON válido' });
-                }
-            }
-            body.link = "undefined"; // Inicializar el link como "undefined" para evitar errores
-            // Si se ha enviado un archivo, procesarlo
-        } else {
-            return res.status(400).json({ message: "Formato de solicitud no soportado" });
+        // Verificar que la solicitud es de tipo JSON
+        if (!req.is('application/json')) {
+            return res.status(400).json({ message: "Se debe enviar una solicitud con formato JSON" });
         }
+
+        // Asegurarse de que req.body contiene los datos
+        let body = req.body;
+
+        // Verificar que el campo 'data' está presente y es un JSON válido
+        if (body.data) {
+            try {
+                body = JSON.parse(body.data); // Si 'data' es un string JSON, parsearlo
+            } catch (error) {
+                return res.status(400).json({ message: 'El campo "data" no contiene JSON válido' });
+            }
+        }
+
+        // Inicializar el link como "undefined"
+        body.link = "undefined";
 
         // **Manejo de keywords**
         if (typeof body.keywords === 'string') {
@@ -109,9 +109,66 @@ const createTFG = async (req, res) => {
     }
 };
 
+
 // Petición PATCH para actualizar un TFG, se actualiza solo los campos que se envíen en el body
 // En este caso se actualiza solo los campos que se envíen en el body, por lo que no es necesario enviar todos los campos del TFG
-const patchTFG = async (req, res) => {
+/*const patchTFG = async (req, res) => {
+    try {
+        const { id } = req.params
+        const body = matchedData(req)
+
+        // **Manejo de keywords**
+        if (typeof body.keywords === 'string') {
+            body.keywords = body.keywords.split(",").map(kw => kw.trim());
+        } else if (!Array.isArray(body.keywords)) {
+            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
+        }
+
+        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: body }, { new: true })
+
+        res.send(tfg)
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}*/
+// Petición PUT para actualizar un TFG
+// En este caso se actualiza el TFG completo, por lo que se debe enviar todos los campos del TFG
+const putTFG = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { body } = req
+
+        // **Manejo de keywords**
+        if (typeof body.keywords === 'string') {
+            body.keywords = body.keywords.split(",").map(kw => kw.trim());
+        } else if (!Array.isArray(body.keywords)) {
+            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
+        }
+
+        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: body }, { new: true })
+        res.send(tfg)
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+// Petición DELETE para eliminar un TFG, hace un soft delete
+// El soft delete es una técnica que consiste en no eliminar físicamente un registro de la base de datos, sino que se marca como eliminado
+// Esto se hace añadiendo un campo booleano a la tabla que se llama deleted, en caso de que sea true significa que el registro ha sido eliminado
+// Luego hay que marcar un tiempo de expiración para que los registros eliminados se eliminen de la base de datos
+const deleteTFG = async (req, res) => {
+    try {
+        const { id } = req.params
+        await tfgsModel.delete({ _id: id })
+        res.status(204).send()
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+// Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
+const patchFileTFG = async (req, res) => {
     try {
         const { id } = req.params
         const link = { link: "undefined" }
@@ -134,53 +191,19 @@ const patchTFG = async (req, res) => {
         res.status(500).json({ message: error.message })
     }
 }
-// Petición PUT para actualizar un TFG
-// En este caso se actualiza el TFG completo, por lo que se debe enviar todos los campos del TFG
-const putTFG = async (req, res) => {
+
+const patchVerifiedTFG = async (req, res) => {
     try {
         const { id } = req.params
-        const { body } = req
-        const tfg = await tfgsModel.findByIdAndUpdate(id, body, { new: true })
+        const { verified } = req.body
+        const tfg = await tfgsModel
+            .findByIdAndUpdate(id, { verified }, { new: true })
         res.send(tfg)
     }
     catch (error) {
         res.status(500).json({ message: error.message })
     }
 }
-// Petición DELETE para eliminar un TFG, hace un soft delete
-// El soft delete es una técnica que consiste en no eliminar físicamente un registro de la base de datos, sino que se marca como eliminado
-// Esto se hace añadiendo un campo booleano a la tabla que se llama deleted, en caso de que sea true significa que el registro ha sido eliminado
-// Luego hay que marcar un tiempo de expiración para que los registros eliminados se eliminen de la base de datos
-const deleteTFG = async (req, res) => {
-    try {
-        const { id } = req.params
-        await tfgsModel.delete({ _id: id })
-        res.status(204).send()
-    } catch (error) {
-        res.status(500).json({ message: error.message })
-    }
-}
 
-// Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
-const patchFileTFG = async (req, res) => {
-    try {
-        const { id, fileName } = req.params
-        const fileBuffer = req.file.buffer
-        const pinataResponse = await uploadToPinata(fileBuffer, fileName)
-        const ipfsFile = pinataResponse.IpfsHash
-        const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`
 
-        const fileData = {
-            filename: fileName,
-            url: ipfs_url
-        }
-
-        //const tfg = await tfgsModel.findByIdAndUpdate(id, { file: file.path }, { new: true })
-        res.send(fileData)
-    }
-    catch (error) {
-        res.status(500).json({ message: error.message })
-    }
-}
-
-module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, patchTFG, putTFG, deleteTFG, patchFileTFG }
+module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG }
