@@ -53,7 +53,7 @@ const getNextTFGS = async (req, res) => {
         console.log("Query generada:", query);
 
         const page = parseInt(page_number, 10) || 1;
-        const tfgs = await tfgsModel.find(query).skip((page - 1) * 10).limit(10);
+        const tfgs = await tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract').skip((page - 1) * 10).limit(10);
 
         res.status(200).json(tfgs);
     } catch (error) {
@@ -205,5 +205,20 @@ const patchVerifiedTFG = async (req, res) => {
     }
 }
 
-
-module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG }
+const getDifferentYears = async (req, res) => {
+    try {
+        const years = await tfgsModel.distinct("year");
+        res.status(200).json(years);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+const getDifferentDegrees = async (req, res) => {
+    try {
+        const degrees = await tfgsModel.distinct("degree");
+        res.status(200).json(degrees);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getDifferentYears, getDifferentDegrees };
