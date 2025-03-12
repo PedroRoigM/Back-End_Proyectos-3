@@ -4,11 +4,26 @@
 * @param {*} res
 */
 const { matchedData } = require('express-validator')
-const { tfgsModel } = require('../models')
+const { tfgsModel, yearsModel, degreesModel } = require('../models')
 const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
 
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
+
+const existsyear = async (year) => {
+    const search = await yearsModel.find({ year: year });
+    if (search.length == 0) {
+        return false
+    }
+    return true
+}
+const existsdegree = async (degree) => {
+    const search = await degreesModel.find({ degree: degree })
+    if (search.length == 0) {
+        return false
+    }
+    return true
+}
 
 // Petición GET para obtener todos los tfgs
 // Se obtiene una lista de todos los TFGs que hay en la base de datos
@@ -50,7 +65,6 @@ const getNextTFGS = async (req, res) => {
         if (filters.advisor) query.advisor = filters.advisor;
         if (filters.abstract) query.abstract = { $regex: filters.abstract, $options: "i" };
         query.verified = true;
-        console.log("Query generada:", query);
 
         const page = parseInt(page_number, 10) || 1;
         const tfgs = await tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract').skip((page - 1) * 10).limit(10);
@@ -70,6 +84,14 @@ const createTFG = async (req, res) => {
         // Verificar que la solicitud es de tipo JSON
         if (!req.is('application/json')) {
             return res.status(400).json({ message: "Se debe enviar una solicitud con formato JSON" });
+        }
+
+        if (! await existsyear(req.body.year)) {
+            return res.status(400).json({ message: "El curso academico no es válido." })
+        }
+
+        if (! await existsdegree(req.body.degree)) {
+            return res.status(400).json({ message: "El grado académico no es válido." })
         }
 
         // Asegurarse de que req.body contiene los datos
@@ -95,10 +117,6 @@ const createTFG = async (req, res) => {
         } else {
             body.keywords = []; // Si no es un array ni string, inicializar como array vacío
         }
-
-        // Imprimir los datos para revisar
-        console.log(body);
-
         // Crear el nuevo TFG
         const data = await tfgsModel.create(body);
         res.status(201).json(data);
@@ -137,7 +155,12 @@ const putTFG = async (req, res) => {
     try {
         const { id } = req.params
         const { body } = req
-
+        if (!existsyear(req.body.year)) {
+            return res.status(400).json({ message: "El curso academico no es valido." })
+        }
+        if (!existsdegree(req.body.degree)) {
+            return res.status(400).json({ message: "El grado académico no es válido." })
+        }
         // **Manejo de keywords**
         if (typeof body.keywords === 'string') {
             body.keywords = body.keywords.split(",").map(kw => kw.trim());

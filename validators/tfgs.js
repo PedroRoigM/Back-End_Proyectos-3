@@ -18,7 +18,8 @@ const validateIdMongo = [
 
 const validateCreateTFG = [
     // Validación para los campos específicos
-    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto.")
+        .matches(/^\d{2}\/\d{2}$/).withMessage("El campo 'year' debe tener el formato 'XX/XX'."),
     check("degree", "El campo 'degree' es obligatorio").not().isEmpty().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
     check("student", "El campo 'student' es obligatorio").not().isEmpty().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
     check("tfgTitle", "El campo 'tfgTitle' es obligatorio").not().isEmpty().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
@@ -45,7 +46,8 @@ const validateCreateTFG = [
 // Se valida que los campos sean obligatorios para que no se pueda hacer una petición sin enviar todos los campos
 const validatePutTFG = [
     // Validación para los campos específicos
-    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("year", "El campo 'year' es obligatorio").not().isEmpty().isString().withMessage("El campo 'year' debe ser una cadena de texto.")
+        .matches(/^\d{2}\/\d{2}$/).withMessage("El campo 'year' debe tener el formato 'XX/XX'."),
     check("degree", "El campo 'degree' es obligatorio").not().isEmpty().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
     check("student", "El campo 'student' es obligatorio").not().isEmpty().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
     check("tfgTitle", "El campo 'tfgTitle' es obligatorio").not().isEmpty().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
@@ -71,7 +73,8 @@ const validatePutTFG = [
 // Validación para actualizar un TFG, se valida que los campos sean opcionales y que cumplan con el tipo de dato esperado
 // Se valida que los campos sean opcionales para que no sea obligatorio enviar todos los campos en el patch
 const validatePatchTFG = [
-    check("year").optional({ checkFalsy: true }).isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("year").optional({ checkFalsy: true }).isString().withMessage("El campo 'year' debe ser una cadena de texto.")
+        .matches(/^\d{2}\/\d{2}$/).withMessage("El campo 'year' debe tener el formato 'XX/XX'."),
     check("degree").optional({ checkFalsy: true }).isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
     check("student").optional({ checkFalsy: true }).isString().withMessage("El campo 'student' debe ser una cadena de texto."),
     check("tfgTitle").optional({ checkFalsy: true }).isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
@@ -84,7 +87,8 @@ const validatePatchTFG = [
 const validateSearcher = [
     check("page_number").not().isEmpty().withMessage("El campo 'page_number' es obligatorio.")
         .isInt({ min: 1 }).withMessage("El campo 'page_number' debe ser un número entero mayor que 0."),
-    check("year").optional().isString().withMessage("El campo 'year' debe ser una cadena de texto."),
+    check("year").optional().isString().withMessage("El campo 'year' debe ser una cadena de texto.")
+        .matches(/^\d{2}\/\d{2}$/).withMessage("El campo 'year' debe tener el formato 'XX/XX'."),
     check("degree").optional().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
     check("student").optional().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
     check("tfgTitle").optional().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
