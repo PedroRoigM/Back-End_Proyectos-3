@@ -205,20 +205,5 @@ const patchVerifiedTFG = async (req, res) => {
     }
 }
 
-const getDifferentYears = async (req, res) => {
-    try {
-        const years = await tfgsModel.distinct("year");
-        res.status(200).json(years);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-const getDifferentDegrees = async (req, res) => {
-    try {
-        const degrees = await tfgsModel.distinct("degree");
-        res.status(200).json(degrees);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getDifferentYears, getDifferentDegrees };
+
+module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG };

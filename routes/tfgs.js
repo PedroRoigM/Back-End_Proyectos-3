@@ -5,15 +5,14 @@ const storage = multer.memoryStorage(); // Luego usa multer
 const upload = multer({ storage });
 
 const {
-    getTFGs, getTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS, patchVerifiedTFG, getDifferentYears, getDifferentDegrees
+    getTFGs, getTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS, patchVerifiedTFG
 } = require('../controllers/tfgs');
 const {
     validateIdMongo, validateCreateTFG, validatePatchTFG, validatePutTFG, validateSearcher, validateVerify
 } = require('../validators/tfgs');
 
 router.get('/', getTFGs);
-router.get('/years', getDifferentYears);
-router.get('/degrees', getDifferentDegrees);
+
 router.get('/:id', validateIdMongo, getTFG);
 router.post('/pages/:page_number', validateSearcher, getNextTFGS);
 router.post('/', validateCreateTFG, createTFG);
