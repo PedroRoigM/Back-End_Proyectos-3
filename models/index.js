@@ -3,5 +3,6 @@ const models = {
     tfgsModel: require('./nosql/tfgs'),
     degreesModel: require('./nosql/degrees'),
     yearsModel: require('./nosql/years'),
+    advisorsModel: require('./nosql/advisors'),
 }
 module.exports = models

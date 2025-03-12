@@ -5,7 +5,7 @@
 */
 const { matchedData } = require('express-validator')
 const { yearsModel } = require('../models')
-
+const handleHttpError = require("../utils/handleError")
 // Petición GET para obtener todos los años
 // Se obtiene una lista de todos los años que hay en la base de datos
 const getYears = async (req, res) => {
@@ -13,7 +13,7 @@ const getYears = async (req, res) => {
         const years = await yearsModel.find().select("_id year")
         res.status(200).json(years)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_GETTING_YEARS")
     }
 }
 // Petición POST para crear un año
@@ -25,7 +25,7 @@ const createYear = async (req, res) => {
         const year = await yearsModel.create(data)
         res.status(201).json(year)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_CREATING_YEAR")
     }
 }
 // Petición DELETE para eliminar un año
@@ -36,7 +36,7 @@ const deleteYear = async (req, res) => {
         const year = await yearsModel.findByIdAndDelete(id)
         res.status(200).json(year)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_DELETING_YEAR")
     }
 }
 

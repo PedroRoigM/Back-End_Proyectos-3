@@ -3,6 +3,8 @@ const checkRole = (roles) => (req, res, next) => {
     try {
         const { user } = req
         const userRole = user.role
+        console.log(userRole)
+        console.log(roles)
         const checkValueRole = roles.includes(userRole)
         if (!checkValueRole) {
             handleHttpError(res, "NOT_ALLOWED", 403)

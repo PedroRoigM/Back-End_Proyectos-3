@@ -7,7 +7,7 @@ const { matchedData } = require('express-validator')
 const { tfgsModel, yearsModel, degreesModel } = require('../models')
 const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
-
+const handleHttpError = require("../utils/handleError")
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
 
 const existsyear = async (year) => {
@@ -25,6 +25,15 @@ const existsdegree = async (degree) => {
     return true
 }
 
+const getTFGsNames = async (req, res) => {
+    try {
+        const tfgs = await tfgsModel.find().select("_id, tfgTitle")
+        return res.status(200).json(tfgs)
+    } catch (err) {
+        handleHttpError(res, "ERROR_GETTING_TFGS_NAMES")
+    }
+}
+
 // Petición GET para obtener todos los tfgs
 // Se obtiene una lista de todos los TFGs que hay en la base de datos
 const getTFGs = async (req, res) => {
@@ -32,7 +41,7 @@ const getTFGs = async (req, res) => {
         const tfgs = await tfgsModel.find()
         res.status(200).json(tfgs)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_GETTING_TFGS")
     }
 }
 // Petición GET para obtener un TFG por su id
@@ -43,7 +52,7 @@ const getTFG = async (req, res) => {
         const tfg = await tfgsModel.findById(id)
         res.send(tfg)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_GETTING_TFG")
     }
 }
 
@@ -71,7 +80,7 @@ const getNextTFGS = async (req, res) => {
 
         res.status(200).json(tfgs);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleHttpError(res, "ERROR_GETTING_TFGS")
     }
 };
 
@@ -122,8 +131,7 @@ const createTFG = async (req, res) => {
         res.status(201).json(data);
 
     } catch (error) {
-        console.error("Error en createTFG:", error);
-        res.status(500).json({ message: error.message });
+        handleHttpError(res, "ERROR_CREATING_TFGS")
     }
 };
 
@@ -172,7 +180,7 @@ const putTFG = async (req, res) => {
         res.send(tfg)
     }
     catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_UPDATING_TFG")
     }
 }
 
@@ -186,7 +194,7 @@ const deleteTFG = async (req, res) => {
         await tfgsModel.delete({ _id: id })
         res.status(204).send()
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_DELETING_TFG")
     }
 }
 
@@ -211,7 +219,7 @@ const patchFileTFG = async (req, res) => {
         const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: link }, { new: true })
         res.send(tfg)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_UPDATING_TFG_FILE")
     }
 }
 
@@ -224,9 +232,9 @@ const patchVerifiedTFG = async (req, res) => {
         res.send(tfg)
     }
     catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_VERIFYING_TFG")
     }
 }
 
 
-module.exports = { getTFGs, getTFG, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG };
+module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG };

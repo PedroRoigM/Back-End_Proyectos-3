@@ -37,7 +37,24 @@ paths:
       responses:
         "201":
           description: "TFG creado correctamente"
-
+  /tfgs/names:
+    get:
+      summary: Obtener los nombres e ids de los TFGs
+      operationId: getTFGnames
+      tags:
+        - TFGs
+      responses:
+        "200":
+          description: Nombres de TFGs obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  tfgTitle:
+                    type: string
   /tfgs/{id}:
     get:
       summary: Obtener un TFG por ID
@@ -287,6 +304,143 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /years:
+    get:
+      summary: Obtener los año academicos
+      operationId: getYears
+      tags:
+        - years
+      responses:
+        "200":
+          description: Años obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Years"
+    post:
+      summary: Crear un nuevo año academico
+      operationId: createYear
+      tags:
+        - years
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                year:
+                  type: string
+      responses:
+        "201":
+          description: Año académico creado correctamente
+  /years/{id}:
+    delete:
+      summary: Eliminar un año academico
+      operationId: deleteYear
+      tags:
+        - years
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Año eliminado correctamente
+
+  /degrees:
+    get:
+      summary: Obtener los cursos academicos
+      operationId: getDegrees
+      tags:
+        - degrees
+      responses:
+        "200":
+          description: Curso obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Degrees"
+    post:
+      summary: Crear un nuevo curso academico
+      operationId: createDegree
+      tags:
+        - degrees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                degree:
+                  type: string
+      responses:
+        "201":
+          description: Curso académico creado correctamente
+  /degrees/{id}:
+    delete:
+      summary: Eliminar un curso academico
+      operationId: deleteDegree
+      tags:
+        - degrees
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Curso eliminado correctamente
+  /advisors:
+    get:
+      summary: Obtener los tutores
+      operationId: getAdvisors
+      tags:
+        - advisors
+      responses:
+        "200":
+          description: Tutores obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Advisors"
+    post:
+      summary: Crear un nuevo curso academico
+      operationId: createDegree
+      tags:
+        - advisors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advisor:
+                  type: string
+      responses:
+        "201":
+          description: Tutor creado correctamente
+  /advisors/{id}:
+    delete:
+      summary: Eliminar un tutor
+      operationId: deleteAdvisor
+      tags:
+        - advisors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tutor eliminado correctamente
+
 components:
   schemas:
     TFG:
@@ -339,4 +493,25 @@ components:
         email:
           type: string
         password:
+          type: string
+    Years:
+      type: object
+      properties:
+        year:
+          type: string
+        _id:
+          type: string
+    Degrees:
+      type: object
+      properties:
+        degree:
+          type: string
+        _id:
+          type: string
+    Advisors:
+      type: object
+      properties:
+        advisor:
+          type: string
+        _id:
           type: string

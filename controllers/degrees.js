@@ -13,7 +13,7 @@ const getDegrees = async (req, res) => {
         const degrees = await degreesModel.find().select("_id degree")
         res.status(200).json(degrees)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_GETTING_DEGREES")
     }
 }
 // Petición POST para crear un grado
@@ -25,7 +25,7 @@ const createDegree = async (req, res) => {
         const degree = await degreesModel.create(data)
         res.status(201).json(degree)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_CREATING_DEGREES")
     }
 }
 // Petición DELETE para eliminar un grado
@@ -36,7 +36,7 @@ const deleteDegree = async (req, res) => {
         const degree = await degreesModel.findByIdAndDelete(id)
         res.status(200).json(degree)
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        handleHttpError(res, "ERROR_DELETING_DEGREES")
     }
 }
 
