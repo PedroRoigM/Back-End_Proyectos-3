@@ -90,13 +90,10 @@ const validateSearcher = [
     check("year").optional().isString().withMessage("El campo 'year' debe ser una cadena de texto.")
         .matches(/^\d{2}\/\d{2}$/).withMessage("El campo 'year' debe tener el formato 'XX/XX'."),
     check("degree").optional().isString().withMessage("El campo 'degree' debe ser una cadena de texto."),
-    check("student").optional().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
-    check("tfgTitle").optional().isString().withMessage("El campo 'tfgTitle' debe ser una cadena de texto."),
     check("advisor").optional().isString().withMessage("El campo 'advisor' debe ser una cadena de texto."),
-    check("abstract").optional().isString().withMessage("El campo 'abstract' debe ser una cadena de texto."),
-    check("keywords").optional().isString().withMessage("El campo 'keywords' debe ser una cadena de texto separada."),
+    check("search").optional().isString().withMessage("El campo 'student' debe ser una cadena de texto."),
     (req, res, next) => {
-        const allowedFields = ['year', 'degree', 'student', 'tfgTitle', 'keywords', 'advisor', 'abstract'];
+        const allowedFields = ['year', 'degree', 'advisor', 'search'];
         Object.keys(req.body).forEach(key => {
             if (!allowedFields.includes(key)) {
                 delete req.body[key]; // Eliminar los campos que no estén en la lista

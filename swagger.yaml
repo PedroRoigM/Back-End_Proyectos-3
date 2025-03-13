@@ -136,7 +136,7 @@ paths:
         "200":
           description: PDF actualizado correctamente
   /tfgs/pages/{page_number}:
-    get:
+    post:
       summary: Obtener los siguientes 10 TFGs con filtros opcionales
       operationId: getNextTFGs
       tags:
@@ -161,36 +161,18 @@ paths:
           schema:
             type: string
           description: Titulación del TFG.
-        - name: student
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Nombre del estudiante.
-        - name: tfgTitle
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Título del TFG (búsqueda por coincidencia parcial).
-        - name: keywords
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Palabras clave separadas por comas (ej. "IA,redes,seguridad").
         - name: advisor
           in: query
           required: false
           schema:
             type: string
           description: Nombre del tutor.
-        - name: abstract
+        - name: search
           in: query
           required: false
           schema:
             type: string
-          description: Búsqueda en el resumen del TFG (coincidencia parcial).
+          description: String búsqueda para los demás campos.
       responses:
         "200":
           description: Lista de TFGs obtenida correctamente

@@ -67,12 +67,18 @@ const getNextTFGS = async (req, res) => {
 
         let query = {};
         if (filters.year) query.year = filters.year;
-        if (filters.degree) query.degree = { $regex: filters.degree, $options: "i" };
-        if (filters.student) query.student = filters.student;
-        if (filters.tfgTitle) query.tfgTitle = { $regex: filters.tfgTitle, $options: "i" };
-        if (filters.keywords) query.keywords = { $in: filters.keywords.split(",") };
+        if (filters.degree) query.degree = filters.degree;
+
         if (filters.advisor) query.advisor = filters.advisor;
-        if (filters.abstract) query.abstract = { $regex: filters.abstract, $options: "i" };
+        if (filters.search) {
+            const searchRegex = { $regex: filters.search, $options: "i" };
+            query.$or = [
+                { student: searchRegex },
+                { tfgTitle: searchRegex },
+                { keywords: { $in: filters.search.split(" ") } },
+                { abstract: searchRegex }
+            ];
+        }
         query.verified = true;
 
         const page = parseInt(page_number, 10) || 1;
