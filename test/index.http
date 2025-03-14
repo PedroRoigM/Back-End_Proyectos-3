@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2NhYzBkMGVlNDFkZDQzYzNjYTAxZmEiLCJyb2xlIjoidXN1YXJpbyIsImlhdCI6MTc0MTM0MDg4MCwiZXhwIjoxNzQxMzQ4MDgwfQ.3SzXmfHLH8mfT5iFCwHhM9ezCGICQktbBHUoH_xzzAs
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2NjNjYwNDliNGViYTM0OWE5ZWNkNzMiLCJpYXQiOjE3NDE5NDc1NjAsImV4cCI6MTc0MTk1NDc2MH0.3BxtgDkhOv-CivYCR8MgF_km635N1uK3nGWSlFhFKAE
 
 GET https://api-937n.onrender.com/api/users
 
@@ -23,22 +23,22 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:3000/api/auth/register
+POST http://localhost:3000/api/users/register
 Content-Type: application/json
 
 {
-    "name": "Pedro Roig",
-    "email": "pedro.roig@example.com",
-    "password": "pedro12345"
+    "name": "Julian",
+    "email": "juliana@example.com",
+    "password": "julian12345"
 }
 
 ###
-POST http://localhost:3000/api/auth/login
+POST http://localhost:3000/api/users/login
 Content-Type: application/json
 
 {
-    "email": "eduardo.rodriguez@example.com",
-    "password": "edu12345"
+    "email": "pedro.roig@example.com",
+    "password": "pedro12345"
 }
 
 ###
@@ -55,8 +55,8 @@ POST http://localhost:3000/api/tfgs
 Content-Type: application/json
 
 {
-  "year": "2025",
-  "degree": "INSO",
+  "year": "20/21",
+  "degree": "Grado en Diseño de Productos Interactivos - inglés (DIPG)",
   "student": "Eduardo Rodriguez",
   "tfgTitle": "Prueba de TFG",
   "keywords": [
@@ -68,10 +68,13 @@ Content-Type: application/json
 }
 
 ###
+DELETE http://localhost:3000/api/tfgs/67d13f04c94da22679fb810c
+###
 GET https://api-937n.onrender.com/api/tfgs
 
 ###
-GET http://localhost:3000/api/tfgs
+GET http://localhost:3000/api/tfgs/names
+Authorization: {{authToken}}
 
 ###
 GET http://localhost:3000/api/tfgs/67c6bd2fc56dc6b5bf9ef91d
@@ -117,13 +120,16 @@ Content-Type: application/pdf
 < ./file2.pdf
 --boundary--
 
-
 ###
-GET http://localhost:3000/api/tfgs/pages/1
+GET http://localhost:3000/api/tfgs/
+Authorization: {{authToken}}
+###
+POST http://localhost:3000/api/tfgs/pages/1
 Content-Type: application/json
+Authorization: {{authToken}}
 
 {
-  "year": "22/23"
+  "search": "Paquito"
 }
 
 ### 
@@ -150,4 +156,61 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:3000/api/tfgs/degrees
+GET http://localhost:3000/api/years
+Authorization: {{authToken}}
+
+###
+POST http://localhost:3000/api/years
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+    "year": "23/24"
+}
+
+###
+DELETE http://localhost:3000/api/years/67d13257008cfe1c5e1cf383
+Authorization: {{authToken}}
+
+###
+GET http://localhost:3000/api/degrees
+Authorization: {{authToken}}
+
+###
+POST http://localhost:3000/api/degrees
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+    "degree": "Grado en Diseño de Productos Interactivos - inglés (DIPG)"
+}
+
+###
+DELETE http://localhost:3000/api/degrees/67d13349ec8390132d920296
+Authorization: {{authToken}}
+
+###
+GET http://localhost:3000/api/advisors
+Authorization: {{authToken}}
+
+###
+POST http://localhost:3000/api/advisors
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+    "advisor": "Álvaro Ortuño Morente"
+}
+
+
+###
+DELETE http://localhost:3000/api/advisors/67d1b8de3d2760f6025beaba
+Authorization: {{authToken}}
+
+###
+GET http://localhost:3000/api/tfgs
+Authorization: {{authToken}}
+
+###
+GET http://localhost:3000/api/tfgs/pdf/67cc54842d5bc7cc91883377
+Authorization: {{authToken}}

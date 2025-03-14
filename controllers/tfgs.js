@@ -7,8 +7,10 @@ const { matchedData } = require('express-validator')
 const { tfgsModel, yearsModel, degreesModel } = require('../models')
 const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
-const handleHttpError = require("../utils/handleError")
+const { handleHttpError } = require("../utils/handleError");
+const GetFilePinata = require("../utils/GetFilePinata")
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
+
 
 const existsyear = async (year) => {
     const search = await yearsModel.find({ year: year });
@@ -241,6 +243,26 @@ const patchVerifiedTFG = async (req, res) => {
         handleHttpError(res, "ERROR_VERIFYING_TFG")
     }
 }
+const getFileTFG = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const tfg = await tfgsModel.findById(id);
 
+        if (!tfg) {
+            return res.status(404).json({ message: "TFG not found" });
+        }
 
-module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG };
+        // Petición a PINATA para obtener el archivo
+        const fileBuffer = await GetFilePinata(tfg.link);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="tfg_${id}.pdf"`); // Opcional: Forzar descarga
+
+        res.send(Buffer.from(fileBuffer)); // Convertir ArrayBuffer a Buffer
+    } catch (error) {
+        console.error(error);
+        handleHttpError(res, "ERROR_GETTING_TFG_FILE");
+    }
+};
+
+module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG };

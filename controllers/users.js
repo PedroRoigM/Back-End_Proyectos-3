@@ -6,18 +6,18 @@
 
 // Funcioens importantes para los usuarios de la web: getUsers, getUser, createUser
 // Así permite crear, leer y obtener usuarios de la base de datos
-
-// Obtener el modelo de usuarios
-const { usersModel } = require('../models')
-const { matchedData } = require('express-validator')
-const { handleHttpError } = require('../utils/handleError')
+const { matchedData } = require("express-validator")
+const { encrypt, compare } = require("../utils/handlePassword")
+const { usersModel } = require("../models")
+const { tokenSign } = require("../utils/handleJwt")
+const { handleHttpError } = require("../utils/handleError")
 
 // Petición GET para obtener todos los usuarios
 const getUsers = async (req, res) => {
     try {
         const user = req.user
         const data = await usersModel.find({})
-        res.send( {data, user} )
+        res.send({ data, user })
     } catch (err) {
         handleHttpError(res, "ERROR_GET_USERS", 403)
     }
@@ -28,8 +28,8 @@ const getUser = async (req, res) => {
     try {
         const { user } = matchedData(req)
         const data = await usersModel.findById(user)
-        if(!data) {
-            return handleHttpError(res, "USER_NOT_EXISTS", 404) 
+        if (!data) {
+            return handleHttpError(res, "USER_NOT_EXISTS", 404)
         }
         res.send(data)
     } catch (err) {
@@ -37,14 +37,53 @@ const getUser = async (req, res) => {
     }
 }
 
-// Petición POST para crear un usuario
-const createUser = async (req, res) => {
+const registerCtrl = async (req, res) => {
     try {
-        const user = matchedData(req)
-        const data = await usersModel.create(user)
+        req = matchedData(req)
+        const userExists = await usersModel.findOne({
+            email: req.email
+        })
+        if (userExists) {
+            handleHttpError(res, "USER_ALREADY_EXISTS", 403)
+            return
+        }
+        const password = await encrypt(req.password)
+        const body = { ...req, password }
+        const dataUser = await usersModel.create(body)
+        dataUser.set("password", undefined, { strict: false })
+        const data = {
+            token: await tokenSign(dataUser),
+            user: dataUser
+        }
         res.send(data)
     } catch (err) {
-        handleHttpError(res, "ERROR_CREATE_USER")
+        handleHttpError(res, "ERROR_REGISTER_USER")
+    }
+}
+
+const loginCtrl = async (req, res) => {
+    try {
+        req = matchedData(req)
+        const user = await usersModel.findOne({ email: req.email }).select("password name email")
+        if (!user) {
+            handleHttpError(res, "USER_NOT_EXISTS", 404)
+            return
+        }
+        const hashPassword = user.password
+        const check = await compare(req.password, hashPassword)
+        if (!check) {
+            handleHttpError(res, "INVALID_PASSWORD", 401)
+            return
+        }
+        user.set("password", undefined, { strict: false })
+        const data = {
+            token: await tokenSign(user),
+            user
+        }
+        res.send(data)
+    } catch (err) {
+        console.log(err)
+        handleHttpError(res, "ERROR_LOGIN_USER")
     }
 }
 
@@ -52,7 +91,7 @@ const updateUser = async (req, res) => {
     try {
         const { id, ...body } = matchedData(req)
         const data = await usersModel.findByIdAndUpdate(id, body, { new: true })
-        if(!data) {
+        if (!data) {
             return handleHttpError(res, "USER_NOT_EXISTS", 404)
         }
         res.send(data)
@@ -64,11 +103,11 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const { user } = matchedData(req)
-        const data = await usersModel.delete( { _id: user } )
-        if(!data) {
+        const data = await usersModel.delete({ _id: user })
+        if (!data) {
             return handleHttpError(res, "USER_NOT_EXISTS", 404)
         }
-        res.send( { message: 'User deleted succesfully' } )
+        res.send({ message: 'User deleted succesfully' })
     } catch (err) {
         handleHttpError(res, "ERROR_DELETE_USER")
     }
@@ -79,7 +118,8 @@ const deleteUser = async (req, res) => {
 module.exports = {
     getUsers,
     getUser,
-    createUser,
+    registerCtrl,
+    loginCtrl,
     updateUser,
     deleteUser
 }
