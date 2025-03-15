@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/session')
 const checkRole = require('../middleware/role')
 const {
     getTFGs, getTFG, putTFG, createTFG, deleteTFG, patchFileTFG, getNextTFGS, patchVerifiedTFG,
-    getTFGsNames, getFileTFG
+    getTFGsNames, getFileTFG, getFilePhotosTFG
 } = require('../controllers/tfgs');
 const {
     validateIdMongo, validateCreateTFG, validatePatchTFG, validatePutTFG, validateSearcher, validateVerify
@@ -16,7 +16,8 @@ const {
 router.get('/', authMiddleware, getTFGs);
 router.get('/names', authMiddleware, getTFGsNames)
 router.get('/:id', authMiddleware, validateIdMongo, getTFG);
-router.get('/pdf/:id', validateIdMongo, getFileTFG);
+router.get('/pdf/:id', authMiddleware, checkRole(['administrador', 'coordinador']), validateIdMongo, getFileTFG);
+router.get('/pdf/photos/:id', validateIdMongo, getFilePhotosTFG);
 
 router.post('/pages/:page_number', authMiddleware, validateSearcher, getNextTFGS);
 router.post('/', authMiddleware, validateCreateTFG, createTFG);

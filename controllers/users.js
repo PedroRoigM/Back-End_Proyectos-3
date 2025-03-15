@@ -113,8 +113,13 @@ const deleteUser = async (req, res) => {
     }
 }
 
-// TODO: updateRole
-
+// TODO: validateUser, updateRole, getUsersByEmailOrNameAndRole (buscar subcadena en email o nombre (si no recibe nada no poner filtros, va a entrar un unico campo "search" por lo que no diferenciar en la busqueda), tener en cuenta que puede recibir un rol o no)
+// /api/users/search?role=role
+/*
+    {
+        search: "subcadena"
+    }
+*/
 module.exports = {
     getUsers,
     getUser,

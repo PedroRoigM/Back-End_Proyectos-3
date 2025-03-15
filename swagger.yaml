@@ -109,6 +109,21 @@ paths:
         "200":
           description: TFG eliminado correctamente
   /tfgs/pdf/{id}:
+    get:
+      summary: Obtener el PDF
+      operationId: getTfgPDF
+      tags:
+        - TFGs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF obtenido correctamente
+
     patch:
       summary: Actualizar el PDF de un TFG
       operationId: patchPDF
@@ -232,7 +247,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
-  /auth/register:
+  /users/register:
     post:
       summary: Crear un nuevo usuario
       operationId: createUser
@@ -247,7 +262,7 @@ paths:
       responses:
         "200":
           description: Usuario creado correctamente
-  /auth/login:
+  /users/login:
     post:
       summary: Iniciar sesión
       operationId: loginUser

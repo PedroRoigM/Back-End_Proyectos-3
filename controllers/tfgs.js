@@ -9,8 +9,8 @@ const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
 const { handleHttpError } = require("../utils/handleError");
 const GetFilePinata = require("../utils/GetFilePinata")
+const handlePdfToImg = require("../utils/handlePdfToImg")
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
-
 
 const existsyear = async (year) => {
     const search = await yearsModel.find({ year: year });
@@ -26,7 +26,6 @@ const existsdegree = async (degree) => {
     }
     return true
 }
-
 const getTFGsNames = async (req, res) => {
     try {
         const tfgs = await tfgsModel.find().select("_id, tfgTitle")
@@ -35,7 +34,6 @@ const getTFGsNames = async (req, res) => {
         handleHttpError(res, "ERROR_GETTING_TFGS_NAMES")
     }
 }
-
 // Petición GET para obtener todos los tfgs
 // Se obtiene una lista de todos los TFGs que hay en la base de datos
 const getTFGs = async (req, res) => {
@@ -51,13 +49,15 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params
-        const tfg = await tfgsModel.findById(id)
+        const tfg = await tfgsModel.findOne({ _id: id, verified: true }).select("_id year degree student tfgTitle keywords advisor abstract")
+        if (!tfg) {
+            return res.status(404).json({ message: "TFG not found or not verified" });
+        }
         res.send(tfg)
     } catch (error) {
         handleHttpError(res, "ERROR_GETTING_TFG")
     }
 }
-
 // Petición GET para obtener los 10 siguientes TFGs
 // Se obtiene una lista de los 10 siguientes TFGs que hay en la base de datos
 const getNextTFGS = async (req, res) => {
@@ -91,8 +91,6 @@ const getNextTFGS = async (req, res) => {
         handleHttpError(res, "ERROR_GETTING_TFGS")
     }
 };
-
-
 // Petición POST para crear un TFG
 // Se crea un TFG con los campos que se envíen en el body
 // Tras el POST quedará recibir el Link al archivo en el endpoint
@@ -142,8 +140,6 @@ const createTFG = async (req, res) => {
         handleHttpError(res, "ERROR_CREATING_TFGS")
     }
 };
-
-
 // Petición PATCH para actualizar un TFG, se actualiza solo los campos que se envíen en el body
 // En este caso se actualiza solo los campos que se envíen en el body, por lo que no es necesario enviar todos los campos del TFG
 /*const patchTFG = async (req, res) => {
@@ -191,7 +187,6 @@ const putTFG = async (req, res) => {
         handleHttpError(res, "ERROR_UPDATING_TFG")
     }
 }
-
 // Petición DELETE para eliminar un TFG, hace un soft delete
 // El soft delete es una técnica que consiste en no eliminar físicamente un registro de la base de datos, sino que se marca como eliminado
 // Esto se hace añadiendo un campo booleano a la tabla que se llama deleted, en caso de que sea true significa que el registro ha sido eliminado
@@ -205,7 +200,6 @@ const deleteTFG = async (req, res) => {
         handleHttpError(res, "ERROR_DELETING_TFG")
     }
 }
-
 // Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
 const patchFileTFG = async (req, res) => {
     try {
@@ -230,7 +224,6 @@ const patchFileTFG = async (req, res) => {
         handleHttpError(res, "ERROR_UPDATING_TFG_FILE")
     }
 }
-
 const patchVerifiedTFG = async (req, res) => {
     try {
         const { id } = req.params
@@ -247,11 +240,9 @@ const getFileTFG = async (req, res) => {
     try {
         const { id } = req.params;
         const tfg = await tfgsModel.findById(id);
-
         if (!tfg) {
             return res.status(404).json({ message: "TFG not found" });
         }
-
         // Petición a PINATA para obtener el archivo
         const fileBuffer = await GetFilePinata(tfg.link);
 
@@ -264,5 +255,28 @@ const getFileTFG = async (req, res) => {
         handleHttpError(res, "ERROR_GETTING_TFG_FILE");
     }
 };
+// TODO: getFilePhotosTFG (funcion para obtener las fotos de un TFG, de esta manera será más seguro para que los usuarios no puedan descargar los archivos)
+// ? Funcionalidad parecida a getFileTFG pero para las fotos de los TFGs, hay que transformar los pdf a imágenes y enviarlas al frontend
+// ? Se utiliza la función handlePdfToImg para convertir el pdf a imágenes
+// ? Se debe enviar un array de imágenes al frontend
+const getFilePhotosTFG = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const tfg = await tfgsModel.findById(id);
+        if (!tfg) {
+            return res.status(404).json({ message: "TFG not found" });
+        }
 
-module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG };
+        // Petición a PINATA para obtener el archivo
+        const fileBuffer = await GetFilePinata(tfg.link);
+
+        // Convertir el pdf a imágenes
+        const images = await handlePdfToImg(fileBuffer);
+
+        res.status(200).json(images);
+    } catch (error) {
+        console.error(error);
+        handleHttpError(res, "ERROR_GETTING_TFG_PHOTOS");
+    }
+};
+module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG, getFilePhotosTFG };
