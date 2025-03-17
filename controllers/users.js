@@ -53,7 +53,7 @@ const registerCtrl = async (req, res) => {
         const dataUser = await usersModel.create(body)
         dataUser.set("password", undefined, { strict: false })
         const data = {
-            token: await tokenSign({ ...user.toObject(), validated: user.validated }),
+            token: await tokenSign({ ...user.toObject(), validated: user.validated, role: user.role }),
             user: dataUser
         }
         res.send(data)
@@ -65,7 +65,7 @@ const registerCtrl = async (req, res) => {
 const loginCtrl = async (req, res) => {
     try {
         req = matchedData(req)
-        const user = await usersModel.findOne({ email: req.email }).select("password name email validated")
+        const user = await usersModel.findOne({ email: req.email }).select("password name email validated role")
         if (!user || !user.validated) {
             handleHttpError(res, "NOT_ABLE_TO_LOGIN", 404)
             return
@@ -78,7 +78,7 @@ const loginCtrl = async (req, res) => {
         }
         user.set("password", undefined, { strict: false })
         const data = {
-            token: await tokenSign({ ...user.toObject(), validated: user.validated }),
+            token: await tokenSign({ ...user.toObject(), validated: user.validated, role: user.role }),
             user
         }
         res.send(data)
