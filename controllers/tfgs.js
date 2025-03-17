@@ -84,9 +84,20 @@ const getNextTFGS = async (req, res) => {
         query.verified = true;
 
         const page = parseInt(page_number, 10) || 1;
-        const tfgs = await tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract').skip((page - 1) * 10).limit(10);
+        const pageSize = 10;
+        const skip = (page - 1) * pageSize;
 
-        res.status(200).json(tfgs);
+        // Consulta principal
+        const [tfgs, totalTFGs] = await Promise.all([
+            tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
+                .skip(skip)
+                .limit(pageSize),
+            tfgsModel.countDocuments(query)
+        ]);
+
+        const totalPages = Math.ceil(totalTFGs / pageSize);
+
+        res.status(200).json({ tfgs, totalPages });
     } catch (error) {
         handleHttpError(res, "ERROR_GETTING_TFGS")
     }
@@ -247,7 +258,7 @@ const getFileTFG = async (req, res) => {
         const fileBuffer = await GetFilePinata(tfg.link);
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="tfg_${id}.pdf"`); // Opcional: Forzar descarga
+        res.setHeader('Content-Disposition', `attachment; filename="tfg_${id}.pdf"`);
 
         res.send(Buffer.from(fileBuffer)); // Convertir ArrayBuffer a Buffer
     } catch (error) {

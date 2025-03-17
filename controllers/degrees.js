@@ -5,7 +5,6 @@
 */
 const { matchedData } = require('express-validator')
 const { degreesModel } = require('../models')
-
 // Petición GET para obtener todos los grados
 // Se obtiene una lista de todos los grados que hay en la base de datos
 const getDegrees = async (req, res) => {
@@ -39,7 +38,6 @@ const deleteDegree = async (req, res) => {
         handleHttpError(res, "ERROR_DELETING_DEGREES")
     }
 }
-
 // Exportar controladores
 module.exports = {
     getDegrees,

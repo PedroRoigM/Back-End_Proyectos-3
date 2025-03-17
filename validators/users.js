@@ -39,9 +39,18 @@ const validatorUpdateUser = [
     (req, res, next) => validateResults(req, res, next)
 ]
 
+const validatorValidateUser = [
+    check('code')
+        .exists()
+        .isNumeric()
+        .isLength({ min: 6, max: 6 }),
+    (req, res, next) => validateResults(req, res, next)
+]
+
 module.exports = {
     validatorRegister,
     validatorLogin,
     validatorGetUser,
-    validatorUpdateUser
+    validatorUpdateUser,
+    validatorValidateUser
 };
