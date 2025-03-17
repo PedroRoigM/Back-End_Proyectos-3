@@ -137,12 +137,10 @@ const validateUser = async (req, res) => {
             handleHttpError(res, "INVALID_CODE", 401)
             return
         }
-        const userUpdated = await usersModel.findByIdAndUpdate(user._id, { validated: true }, { new: true })
-        const data = {
-            token: await tokenSign(userUpdated),
-            userUpdated
-        }
-        res.send(data)
+        await usersModel.findByIdAndUpdate(user._id, { validated: true }, { new: true })
+
+        // Devolver ok
+        res.send({ message: "User validated" })
     } catch (err) {
         console.log(err)
         handleHttpError(res, "ERROR_VALIDATE_USER")

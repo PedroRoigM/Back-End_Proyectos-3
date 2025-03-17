@@ -15,6 +15,16 @@ const authMiddleware = async (req, res, next) => {
             return
         }
         const user = await usersModel.findById(dataToken._id)
+        if (!user) {
+            handleHttpError(res, "USER_NOT_FOUND", 404)
+            return
+        }
+        if (req.url !== 'validate') {
+            if (!user.validated) {
+                handleHttpError(res, "EMAIL_NOT_VALIDATED", 401)
+                return
+            }
+        }
         req.user = user
         next()
     } catch (err) {
