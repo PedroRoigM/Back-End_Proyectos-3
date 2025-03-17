@@ -20,7 +20,6 @@ const authMiddleware = async (req, res, next) => {
             handleHttpError(res, "USER_NOT_FOUND", 404)
             return
         }
-        console.log("URL: ", req.url)
         if (req.url !== '/validate') {
             if (!user.validated) {
                 handleHttpError(res, "EMAIL_NOT_VALIDATED", 401)
