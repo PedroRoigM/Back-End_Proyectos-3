@@ -1,5 +1,5 @@
-const pinataApiKey = process.env.PINATA_API_KEY;
-const pinataSecretApiKey = process.env.PINATA_SECRET_KEY;
+const pinataApiKey = process.env.PINATA_KEY;
+const pinataSecretApiKey = process.env.PINATA_SECRET;
 
 const GetFilePinata = async (url_file) => {
     const response = await fetch(url_file, {

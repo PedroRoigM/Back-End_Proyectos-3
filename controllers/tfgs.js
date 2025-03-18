@@ -9,6 +9,7 @@ const multer = require("multer");
 const uploadToPinata = require("../utils/UploadToPinata");
 const { handleHttpError } = require("../utils/handleError");
 const GetFilePinata = require("../utils/GetFilePinata")
+const DeleteFilePinata = require("../utils/DeleteFilePinata")
 const handlePdfToImg = require("../utils/handlePdfToImg")
 const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
 
@@ -205,12 +206,55 @@ const putTFG = async (req, res) => {
 const deleteTFG = async (req, res) => {
     try {
         const { id } = req.params
+        // Eliminar el file del endpoint
+        await deleteFileTFG(req, res)
+        // Si no se ha eliminado el archivo, no se elimina el TFG
+        if (res.headersSent) return;
+        // Eliminar el TFG de la base de datos
         await tfgsModel.delete({ _id: id })
         res.status(204).send()
     } catch (error) {
-        handleHttpError(res, "ERROR_DELETING_TFG")
+        if (!res.headersSent) {
+            return res.status(500).json({ error: "ERROR_DELETING_TFG" });
+        }
     }
 }
+// Petición DELETE para eliminar un archivo PDF, debe eliminar el archivo del endpoint y actualizar el campo Link del TFG
+const deleteFileTFG = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Buscar el documento y verificar si tiene un enlace válido
+        const tfg = await tfgsModel.findById(id).select("link");
+        if (!tfg || !tfg.link) {
+            return res.status(404).json({ error: "No se encontró el archivo a eliminar" });
+        }
+
+        // Intentar eliminar el archivo de Pinata
+        try {
+            await DeleteFilePinata(tfg.link);
+        } catch (error) {
+            console.error("Error eliminando el archivo de Pinata:", error);
+            return res.status(500).json({ error: "Error eliminando archivo de Pinata" });
+        }
+
+        // Actualizar el campo `link` y `verified`
+        const updatedTFG = await tfgsModel.findByIdAndUpdate(
+            id,
+            { $set: { link: undefined, verified: false } },
+            { new: true }
+        );
+
+        return res.json(updatedTFG);
+    } catch (error) {
+        console.error("Error en deleteFileTFG:", error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: "ERROR_DELETING_TFG_FILE" });
+        }
+    }
+};
+
+
 // Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
 const patchFileTFG = async (req, res) => {
     try {
@@ -290,4 +334,49 @@ const getFilePhotosTFG = async (req, res) => {
         handleHttpError(res, "ERROR_GETTING_TFG_PHOTOS");
     }
 };
-module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG, getFilePhotosTFG };
+
+// Buscar los pdfs que aún no han sido validados
+// Se obtiene una lista de los 10 siguientes TFGs que hay en la base de datos
+const getUnverifiedTFGs = async (req, res) => {
+    try {
+        const { page_number } = req.params;
+
+        // Obtener filtros tanto de req.query como de req.body
+        const filters = { ...req.query, ...req.body };
+
+        let query = {};
+        if (filters.year) query.year = filters.year;
+        if (filters.degree) query.degree = filters.degree;
+
+        if (filters.advisor) query.advisor = filters.advisor;
+        if (filters.search) {
+            const searchRegex = { $regex: filters.search, $options: "i" };
+            query.$or = [
+                { student: searchRegex },
+                { tfgTitle: searchRegex },
+                { keywords: { $in: filters.search.split(" ") } },
+                { abstract: searchRegex }
+            ];
+        }
+        query.verified = false;
+
+        const page = parseInt(page_number, 10) || 1;
+        const pageSize = 10;
+        const skip = (page - 1) * pageSize;
+
+        // Consulta principal
+        const [tfgs, totalTFGs] = await Promise.all([
+            tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
+                .skip(skip)
+                .limit(pageSize),
+            tfgsModel.countDocuments(query)
+        ]);
+
+        const totalPages = Math.ceil(totalTFGs / pageSize);
+
+        res.status(200).json({ tfgs, totalPages });
+    } catch (err) {
+        handleHttpError(res, "ERROR_GETTING_UNVERIFIED_TFGS")
+    }
+}
+module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG, getFilePhotosTFG, getUnverifiedTFGs };

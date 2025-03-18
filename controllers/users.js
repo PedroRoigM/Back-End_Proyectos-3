@@ -146,6 +146,61 @@ const validateUser = async (req, res) => {
         handleHttpError(res, "ERROR_VALIDATE_USER")
     }
 }
+// Solicitar codigo para recuperar contraseña, recibe el correo
+const requestRecoverPassword = async (req, res) => {
+    try {
+        const { email } = req.body
+        const user = await usersModel
+            .findOne({ email })
+            .select("email code")
+        if (!user) {
+            return handleHttpError(res, "USER_NOT_EXISTS", 404)
+        }
+        // Generar código y guardarlo en la base de datos
+        const code = Math.floor(100000 + Math.random() * 900000)
+        await usersModel.findOneAndUpdate({ email }, { code }, { new: true })
+        // Enviar email con el código
+        // Aquí se enviaría el correo con el código
+
+        // Devolver ok
+        res.send({ message: "Code sent to email" })
+    }
+    catch (err) {
+        handleHttpError(res, "ERROR_REQUEST_RECOVER_PASSWORD")
+    }
+}
+// Recuperar contraseña, recibe el correo, la nueva contraseña y el código
+const recoverPassword = async (req, res) => {
+    try {
+        const { email, code, password } = req.body
+        console.log(req.body)
+        const user = await usersModel
+            .findOne({ email })
+            .select("code password")
+        console.log(user)
+        if (!user || user.code !== code) {
+            return handleHttpError(res, "INVALID_CODE", 401)
+        }
+        // Comprobar que la nueva contraseña no sea igual a la anterior
+        const actualPassword = user.password
+
+        const check = await compare(password, actualPassword)
+        if (check) {
+            handleHttpError(res, "SAME_PASSWORD", 401)
+            return
+        }
+
+        const hashPassword = await encrypt(password)
+        await usersModel
+            .findOneAndUpdate({ email }, { password: hashPassword }, { new: true })
+        // Devolver ok
+        res.send({ message: "Password recovered" })
+    }
+    catch (err) {
+        handleHttpError(res, "ERROR_RECOVER_PASSWORD")
+    }
+}
+
 module.exports = {
     getUsers,
     getUser,
@@ -153,5 +208,7 @@ module.exports = {
     loginCtrl,
     updateUser,
     deleteUser,
-    validateUser
+    validateUser,
+    recoverPassword,
+    requestRecoverPassword
 }

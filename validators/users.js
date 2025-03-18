@@ -46,11 +46,32 @@ const validatorValidateUser = [
         .isLength({ min: 6, max: 6 }),
     (req, res, next) => validateResults(req, res, next)
 ]
+const validatorRequestRecoverPassword = [
+    check('email')
+        .exists()
+        .isEmail(),
+    (req, res, next) => validateResults(req, res, next)
+]
+const validatorRecoverPassword = [
+    check('code')
+        .exists()
+        .isNumeric()
+        .isLength({ min: 6, max: 6 }),
+    check('email')
+        .exists()
+        .isEmail(),
+    check('password')
+        .exists()
+        .isLength({ min: 6 }),
+    (req, res, next) => validateResults(req, res, next)
+]
 
 module.exports = {
     validatorRegister,
     validatorLogin,
     validatorGetUser,
     validatorUpdateUser,
-    validatorValidateUser
+    validatorValidateUser,
+    validatorRequestRecoverPassword,
+    validatorRecoverPassword
 };
