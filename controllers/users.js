@@ -3,7 +3,6 @@
 * @param {*} req
 * @param {*} res
 */
-
 // Funcioens importantes para los usuarios de la web: getUsers, getUser, createUser
 // Así permite crear, leer y obtener usuarios de la base de datos
 const { matchedData } = require("express-validator")
@@ -11,7 +10,6 @@ const { encrypt, compare } = require("../utils/handlePassword")
 const { usersModel } = require("../models")
 const { tokenSign } = require("../utils/handleJwt")
 const { handleHttpError } = require("../utils/handleError")
-
 // Petición GET para obtener todos los usuarios
 const getUsers = async (req, res) => {
     try {
@@ -22,7 +20,6 @@ const getUsers = async (req, res) => {
         handleHttpError(res, "ERROR_GET_USERS", 403)
     }
 }
-
 // Petición GET para obtener un usuario en específico según su ID
 const getUser = async (req, res) => {
     try {
@@ -73,6 +70,11 @@ const loginCtrl = async (req, res) => {
         const hashPassword = user.password
         const check = await compare(req.password, hashPassword)
         if (!check) {
+            await usersModel.findByIdAndUpdate(user._id, { $inc: { athempts: 1 } })
+            if (user.athempts >= 3) {
+                handleHttpError(res, "MAX_ATHEMPTS", 401)
+                return
+            }
             handleHttpError(res, "INVALID_PASSWORD", 401)
             return
         }
@@ -113,7 +115,6 @@ const deleteUser = async (req, res) => {
         handleHttpError(res, "ERROR_DELETE_USER")
     }
 }
-
 // TODO: validateUser, updateRole, getUsersByEmailOrNameAndRole (buscar subcadena en email o nombre (si no recibe nada no poner filtros, va a entrar un unico campo "search" por lo que no diferenciar en la busqueda), tener en cuenta que puede recibir un rol o no)
 // /api/users/search?role=role
 /*
@@ -121,7 +122,6 @@ const deleteUser = async (req, res) => {
         search: "subcadena"
     }
 */
-
 const validateUser = async (req, res) => {
     try {
         const { user } = req
@@ -130,14 +130,14 @@ const validateUser = async (req, res) => {
         if (code !== user.code) {
             user.athempts += 1
             if (user.athempts >= 3) {
-                await usersModel.findByIdAndDelete(user._id)
-                return handleHttpError(res, "USER_DELETED", 401)
+                await usersModel.findByIdAndUpdate(user._id, { $set: { code: null } })
+                return handleHttpError(res, "MAX_ATHEMPTS", 401)
             }
             await usersModel.findByIdAndUpdate(user._id, { athempts: user.athempts }, { new: true })
             handleHttpError(res, "INVALID_CODE", 401)
             return
         }
-        await usersModel.findByIdAndUpdate(user._id, { validated: true }, { new: true })
+        await usersModel.findByIdAndUpdate(user._id, { validated: true, athempts: 0 }, { new: true })
 
         // Devolver ok
         res.send({ message: "User validated" })
@@ -158,7 +158,8 @@ const requestRecoverPassword = async (req, res) => {
         }
         // Generar código y guardarlo en la base de datos
         const code = Math.floor(100000 + Math.random() * 900000)
-        await usersModel.findOneAndUpdate({ email }, { code }, { new: true })
+
+        await usersModel.findOneAndUpdate({ email }, { code: code, athempts: 0 }, { new: true })
         // Enviar email con el código
         // Aquí se enviaría el correo con el código
 
@@ -173,12 +174,14 @@ const requestRecoverPassword = async (req, res) => {
 const recoverPassword = async (req, res) => {
     try {
         const { email, code, password } = req.body
-        console.log(req.body)
-        const user = await usersModel
-            .findOne({ email })
-            .select("code password")
-        console.log(user)
+        const user = await usersModel.findOne({ email }).select("_id code password athempts")
         if (!user || user.code !== code) {
+            user.athempts += 1
+            if (user.athempts >= 3) {
+                await usersModel.findByIdAndUpdate(user._id, { $set: { code: null } })
+                return handleHttpError(res, "MAX_ATHEMPTS", 401)
+            }
+            await usersModel.findByIdAndUpdate(user._id, { $set: { athempts: user.athempts } })
             return handleHttpError(res, "INVALID_CODE", 401)
         }
         // Comprobar que la nueva contraseña no sea igual a la anterior
@@ -192,7 +195,7 @@ const recoverPassword = async (req, res) => {
 
         const hashPassword = await encrypt(password)
         await usersModel
-            .findOneAndUpdate({ email }, { password: hashPassword }, { new: true })
+            .findOneAndUpdate({ email }, { password: hashPassword, athempts: 0 }, { new: true })
         // Devolver ok
         res.send({ message: "Password recovered" })
     }
@@ -200,7 +203,6 @@ const recoverPassword = async (req, res) => {
         handleHttpError(res, "ERROR_RECOVER_PASSWORD")
     }
 }
-
 module.exports = {
     getUsers,
     getUser,

@@ -253,8 +253,6 @@ const deleteFileTFG = async (req, res) => {
         }
     }
 };
-
-
 // Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
 const patchFileTFG = async (req, res) => {
     try {

@@ -11,8 +11,6 @@ const DeleteFilePinata = async (url_file) => {
 
         const cid = cidMatch[1];
 
-        console.log(pinataApiKey)
-        console.log(pinataSecretApiKey)
         // Llamar al endpoint correcto de Pinata
         const response = await fetch(`https://api.pinata.cloud/pinning/unpin/${cid}`, {
             method: 'DELETE',
