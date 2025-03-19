@@ -18,8 +18,8 @@ router.get('/names', authMiddleware, getTFGsNames)
 router.get('/:id', authMiddleware, validateIdMongo, getTFG);
 router.get('/pdf/:id', authMiddleware, checkRole(['administrador', 'coordinador']), validateIdMongo, getFileTFG);
 router.get('/pdf/photos/:id', authMiddleware, validateIdMongo, getFilePhotosTFG);
-router.get('/unverified', authMiddleware, checkRole(['administrador', 'coordinador']), validateSearcher, getUnverifiedTFGs);
 
+router.post('/unverified/:page_number', authMiddleware, checkRole(['administrador', 'coordinador']), validateSearcher, getUnverifiedTFGs);
 router.post('/pages/:page_number', authMiddleware, validateSearcher, getNextTFGS);
 router.post('/', authMiddleware, validateCreateTFG, createTFG);
 

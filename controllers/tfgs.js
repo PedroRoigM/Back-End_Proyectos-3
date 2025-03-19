@@ -361,7 +361,6 @@ const getUnverifiedTFGs = async (req, res) => {
         const page = parseInt(page_number, 10) || 1;
         const pageSize = 10;
         const skip = (page - 1) * pageSize;
-
         // Consulta principal
         const [tfgs, totalTFGs] = await Promise.all([
             tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
