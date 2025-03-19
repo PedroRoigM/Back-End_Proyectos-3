@@ -225,6 +225,7 @@ paths:
       responses:
         "200":
           description: TFG verificado correctamente
+  paths:
   /users:
     get:
       summary: Obtener todos los usuarios
@@ -301,6 +302,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+    patch:
+      summary: Actualizar un usuario
+      operationId: updateUser
+      tags:
+        - Usuarios
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Token de autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Usuario actualizado correctamente
+  /users/recover-password:
+    post:
+      summary: Solicitar recuperación de contraseña
+      operationId: requestRecoverPassword
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Solicitud de recuperación enviada correctamente
+    patch:
+      summary: Restablecer contraseña
+      operationId: recoverPassword
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Contraseña restablecida correctamente
+
   /years:
     get:
       summary: Obtener los año academicos

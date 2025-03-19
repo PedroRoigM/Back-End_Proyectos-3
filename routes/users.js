@@ -13,7 +13,6 @@ const { validatorGetUser,
 
 router.post('/register', validatorRegister, registerCtrl);
 router.post('/login', validatorLogin, loginCtrl);
-router.patch('/validate', authMiddleware, validatorValidateUser, validateUser);
 
 router.post('/recover-password', validatorRequestRecoverPassword, requestRecoverPassword);
 router.patch('/recover-password', validatorRecoverPassword, recoverPassword);

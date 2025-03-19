@@ -13,7 +13,7 @@ Authorization: {{authToken}}
 }
 
 ###
-POST http://localhost:3000/api/auth/register
+POST http://localhost:3000/api/users/register
 Content-Type: application/json
 
 {
