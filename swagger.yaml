@@ -347,6 +347,11 @@ paths:
       responses:
         "200":
           description: Solicitud de recuperación enviada correctamente
+        "404":
+          description: El usuario no existe
+        "403":
+          description: Error en la petición
+
     patch:
       summary: Restablecer contraseña
       operationId: recoverPassword
@@ -359,13 +364,23 @@ paths:
             schema:
               type: object
               properties:
-                token:
+                email:
                   type: string
-                newPassword:
+                code:
+                  type: string
+                password:
                   type: string
       responses:
         "200":
           description: Contraseña restablecida correctamente
+        "401":
+          description: Número de intentos excedido
+        "401":
+          description: Código incorrecto
+        "401":
+          description: Contraseña nueva igual a la anterior
+        "403":
+          description: Error en la petición
 
   /years:
     get:
