@@ -50,8 +50,8 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params
-        const tfg = await tfgsModel.findOne({ _id: id, verified: true }).select("_id year degree student tfgTitle keywords advisor abstract")
-        if (!tfg) {
+        const tfg = await tfgsModel.findById({ _id: id }).select('year degree student tfgTitle keywords advisor abstract verified')
+        if (!tfg || !tfg.verified) {
             return res.status(404).json({ message: "TFG not found or not verified" });
         }
         res.send(tfg)
