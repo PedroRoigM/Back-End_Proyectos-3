@@ -375,10 +375,6 @@ paths:
           description: Contraseña restablecida correctamente
         "401":
           description: Número de intentos excedido
-        "401":
-          description: Código incorrecto
-        "401":
-          description: Contraseña nueva igual a la anterior
         "403":
           description: Error en la petición
 
