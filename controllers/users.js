@@ -37,8 +37,22 @@ const getUser = async (req, res) => {
 const registerCtrl = async (req, res) => {
     req = matchedData(req)
     const password = await encrypt(req.password)
-    const body = {...req, password}
+    const userWithEmail = await usersModel.findOne({
+        email: req.email
+    })
+    if (userWithEmail) {
+        handleHttpError(res, "EMAIL_ALREADY_EXISTS", 400)
+        return
+    }
+    const body = { ...req, password }
     const dataUser = await usersModel.create(body)
+
+    // Crear codigo de validación
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    await usersModel.findByIdAndUpdate(dataUser._id, { code }, { new: true })
+    // Enviar email con el código
+    // TODO:enviar codigo por email
+
     dataUser.set('password', undefined, { strict: false })
     const data = {
         token: await tokenSign(dataUser),
@@ -110,30 +124,30 @@ const deleteUser = async (req, res) => {
         search: "subcadena"
     }
 */
-// const validateUser = async (req, res) => {
-//     try {
-//         const { user } = req
-//         const { code } = req.body
+const validateUser = async (req, res) => {
+    try {
+        const { user } = req
+        const { code } = req.body
 
-//         if (code !== user.code) {
-//             user.athempts += 1
-//             if (user.athempts >= 3) {
-//                 await usersModel.findByIdAndUpdate(user._id, { $set: { code: null } })
-//                 return handleHttpError(res, "MAX_ATHEMPTS", 401)
-//             }
-//             await usersModel.findByIdAndUpdate(user._id, { athempts: user.athempts }, { new: true })
-//             handleHttpError(res, "INVALID_CODE", 401)
-//             return
-//         }
-//         await usersModel.findByIdAndUpdate(user._id, { validated: true, athempts: 0 }, { new: true })
+        if (code !== user.code) {
+            user.athempts += 1
+            if (user.athempts >= 3) {
+                await usersModel.findByIdAndUpdate(user._id, { $set: { code: null } })
+                return handleHttpError(res, "MAX_ATHEMPTS", 401)
+            }
+            await usersModel.findByIdAndUpdate(user._id, { athempts: user.athempts }, { new: true })
+            handleHttpError(res, "INVALID_CODE", 401)
+            return
+        }
+        await usersModel.findByIdAndUpdate(user._id, { validated: true, athempts: 0 }, { new: true })
 
-//         // Devolver ok
-//         res.send({ message: "User validated" })
-//     } catch (err) {
-//         console.log(err)
-//         handleHttpError(res, "ERROR_VALIDATE_USER")
-//     }
-// }
+        // Devolver ok
+        res.send({ message: "User validated" })
+    } catch (err) {
+        console.log(err)
+        handleHttpError(res, "ERROR_VALIDATE_USER")
+    }
+}
 // Solicitar codigo para recuperar contraseña, recibe el correo
 const requestRecoverPassword = async (req, res) => {
     try {
@@ -198,7 +212,7 @@ module.exports = {
     loginCtrl,
     updateUser,
     deleteUser,
-    //validateUser,
+    validateUser,
     recoverPassword,
     requestRecoverPassword
 }

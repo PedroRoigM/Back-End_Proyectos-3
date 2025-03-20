@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2NjNjYwNDliNGViYTM0OWE5ZWNkNzMiLCJpYXQiOjE3NDE5NDc1NjAsImV4cCI6MTc0MTk1NDc2MH0.3BxtgDkhOv-CivYCR8MgF_km635N1uK3nGWSlFhFKAE
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2RiZGQ4OGY5ZTZjMzg1NmU0YzJkN2MiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQyNDYyMzQ0LCJleHAiOjE3NDM2NzE5NDR9.0QvPZxtsgqp11Df1wMJpGUMk2EiVl0LHtxFAbs1SW74
 
 GET https://api-937n.onrender.com/api/users
 
@@ -33,12 +33,21 @@ Content-Type: application/json
 }
 
 ###
+POST http://localhost:3000/api/users/validate
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+    "code": "473685"
+}
+
+###
 POST http://localhost:3000/api/users/login
 Content-Type: application/json
 
 {
-    "email": "pedro.roig@example.com",
-    "password": "pedro12345"
+    "email": "juliana@example.com",
+    "password": "julian12345"
 }
 
 ###

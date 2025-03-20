@@ -5,6 +5,9 @@ const Schema = new mongoose.Schema(
         "email": { type: String, required: true, unique: true },
         "password": { type: String, required: true },
         "role": { type: String, enum: ["administrador", "coordinador", "usuario"], default: "usuario" },
+        "validated": { type: Boolean, default: false },
+        "athempts": { type: Number, default: 0 },
+        "code": { type: String, default: null },
     },
     {
         timestamps: true,
