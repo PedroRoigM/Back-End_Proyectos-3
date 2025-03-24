@@ -213,7 +213,7 @@ DELETE http://localhost:3000/api/advisors/67d1b8de3d2760f6025beaba
 Authorization: {{authToken}}
 
 ###
-GET http://localhost:3000/api/tfgs
+GET http://localhost:3000/api/tfgs/pages/1
 Authorization: {{authToken}}
 
 ###

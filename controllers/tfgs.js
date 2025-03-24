@@ -80,7 +80,7 @@ const getNextTFGS = async (req, res) => {
         const filters = { ...req.query, ...req.body };
 
         // Solo mostrar TFGs verificados a usuarios normales
-        if (req.user.role === 'usuario') {
+        if (['administrador', 'coordinador'].includes(req.user.role)) {
             filters.verified = true;
         }
 
