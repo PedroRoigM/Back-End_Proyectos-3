@@ -1,11 +1,24 @@
-const { validationResult } = require("express-validator")
+const { validationResult } = require("express-validator");
+
+/**
+ * Función para manejar los resultados de validación
+ * @param {Object} req - Objeto de solicitud
+ * @param {Object} res - Objeto de respuesta
+ * @param {Function} next - Función middleware siguiente
+ * @returns {Object|Function} - Retorna error o continúa con el siguiente middleware
+ */
 const validateResults = (req, res, next) => {
-    try {
-        validationResult(req).throw()
-        return next()
-    } catch (err) {
-        res.status(422)
-        res.send({ errors: err.array() })
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            errors: errors.array().map(error => ({
+                param: error.param,
+                msg: error.msg,
+                value: error.value
+            }))
+        });
     }
-}
-module.exports = validateResults
+    next();
+};
+
+module.exports = validateResults;

@@ -48,6 +48,33 @@ const createDegree = async (req, res) => {
 };
 
 /**
+ * Actualiza un grado académico
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const updateDegree = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Si se está actualizando el nombre, verificar que no exista otro con ese nombre
+        if (updateData.degree) {
+            const existingDegree = await degreeService.findDegreeByName(updateData.degree);
+            if (existingDegree && existingDegree._id.toString() !== id) {
+                return errorHandler(new Error('DEGREE_ALREADY_EXISTS'), res);
+            }
+        }
+
+        const updatedDegree = await degreeService.updateDegree(id, updateData);
+        createResponse(res, 200, updatedDegree);
+    } catch (error) {
+        logger.error(`Error actualizando grado académico ${req.params.id}`, { error, updateData: req.body });
+        errorHandler(error, res);
+    }
+};
+
+/**
  * Elimina un grado académico
  * @async
  * @param {Object} req - Objeto de petición Express
@@ -74,5 +101,6 @@ const deleteDegree = async (req, res) => {
 module.exports = {
     getDegrees,
     createDegree,
+    updateDegree,
     deleteDegree
 };

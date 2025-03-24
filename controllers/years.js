@@ -33,11 +33,6 @@ const createYear = async (req, res) => {
     try {
         const yearData = req.matchedData || req.body;
 
-        // Verificar el formato del año (XX/XX)
-        if (!/^\d{2}\/\d{2}$/.test(yearData.year)) {
-            return errorHandler(new Error('INVALID_YEAR_FORMAT'), res);
-        }
-
         // Verificar si ya existe un año con el mismo nombre
         const existingYear = await yearService.findYearByName(yearData.year);
         if (existingYear) {
@@ -48,6 +43,33 @@ const createYear = async (req, res) => {
         createResponse(res, 201, createdYear);
     } catch (error) {
         logger.error('Error creando año académico', { error, yearData: req.body });
+        errorHandler(error, res);
+    }
+};
+
+/**
+ * Actualiza un año académico existente
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const updateYear = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Si se está actualizando el year, verificar que no exista otro con ese nombre
+        if (updateData.year) {
+            const existingYear = await yearService.findYearByName(updateData.year);
+            if (existingYear && existingYear._id.toString() !== id) {
+                return errorHandler(new Error('YEAR_ALREADY_EXISTS'), res);
+            }
+        }
+
+        const updatedYear = await yearService.updateYear(id, updateData);
+        createResponse(res, 200, updatedYear);
+    } catch (error) {
+        logger.error(`Error actualizando año académico ${req.params.id}`, { error, updateData: req.body });
         errorHandler(error, res);
     }
 };
@@ -79,5 +101,6 @@ const deleteYear = async (req, res) => {
 module.exports = {
     getYears,
     createYear,
+    updateYear,
     deleteYear
 };

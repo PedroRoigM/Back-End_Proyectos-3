@@ -47,6 +47,39 @@ const createAdvisor = async (req, res) => {
 };
 
 /**
+ * Actualiza un tutor existente
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const updateAdvisor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Si se está actualizando el nombre, verificar que no exista otro tutor con ese nombre
+        if (updateData.advisor) {
+            const existingAdvisor = await advisorService.findAdvisorByName(updateData.advisor);
+            if (existingAdvisor && existingAdvisor._id.toString() !== id) {
+                return errorHandler(new Error('ADVISOR_ALREADY_EXISTS'), res);
+            }
+        }
+
+        // Verificar que el tutor existe
+        const advisor = await advisorService.getAdvisorById(id);
+        if (!advisor) {
+            return errorHandler(new Error('ADVISOR_NOT_FOUND'), res);
+        }
+
+        const updatedAdvisor = await advisorService.updateAdvisor(id, updateData);
+        createResponse(res, 200, updatedAdvisor);
+    } catch (error) {
+        logger.error(`Error actualizando tutor ${req.params.id}`, { error, updateData: req.body });
+        errorHandler(error, res);
+    }
+};
+
+/**
  * Elimina un tutor
  * @async
  * @param {Object} req - Objeto de petición Express
@@ -73,5 +106,6 @@ const deleteAdvisor = async (req, res) => {
 module.exports = {
     getAdvisors,
     createAdvisor,
+    updateAdvisor,
     deleteAdvisor
 };

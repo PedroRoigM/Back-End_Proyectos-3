@@ -26,6 +26,16 @@ const findYearByName = async (yearName) => {
 };
 
 /**
+ * Obtiene un año por su ID
+ * @async
+ * @param {string} id - ID del año
+ * @returns {Promise<Object|null>} Año encontrado o null
+ */
+const getYearById = async (id) => {
+    return await yearsModel.findById(id);
+};
+
+/**
  * Crea un nuevo año académico
  * @async
  * @param {Object} yearData - Datos del año
@@ -33,6 +43,21 @@ const findYearByName = async (yearName) => {
  */
 const createYear = async (yearData) => {
     return await yearsModel.create(yearData);
+};
+
+/**
+ * Actualiza un año académico existente
+ * @async
+ * @param {string} id - ID del año
+ * @param {Object} updateData - Datos a actualizar
+ * @returns {Promise<Object|null>} Año actualizado o null si no existe
+ */
+const updateYear = async (id, updateData) => {
+    return await yearsModel.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+    );
 };
 
 /**
@@ -75,7 +100,9 @@ const getCurrentYear = async () => {
 module.exports = {
     getAllYears,
     findYearByName,
+    getYearById,
     createYear,
+    updateYear,
     isYearUsedInTFGs,
     deleteYear,
     getCurrentYear

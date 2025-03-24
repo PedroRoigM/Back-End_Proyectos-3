@@ -26,6 +26,16 @@ const findAdvisorByName = async (name) => {
 };
 
 /**
+ * Obtiene un tutor por su ID
+ * @async
+ * @param {string} id - ID del tutor
+ * @returns {Promise<Object|null>} Tutor encontrado o null
+ */
+const getAdvisorById = async (id) => {
+    return await advisorsModel.findById(id);
+};
+
+/**
  * Crea un nuevo tutor
  * @async
  * @param {Object} advisorData - Datos del tutor
@@ -33,6 +43,21 @@ const findAdvisorByName = async (name) => {
  */
 const createAdvisor = async (advisorData) => {
     return await advisorsModel.create(advisorData);
+};
+
+/**
+ * Actualiza un tutor existente
+ * @async
+ * @param {string} id - ID del tutor
+ * @param {Object} updateData - Datos a actualizar
+ * @returns {Promise<Object|null>} Tutor actualizado o null si no existe
+ */
+const updateAdvisor = async (id, updateData) => {
+    return await advisorsModel.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+    );
 };
 
 /**
@@ -61,8 +86,10 @@ const deleteAdvisor = async (id) => {
 
 module.exports = {
     getAllAdvisors,
+    getAdvisorById,
     findAdvisorByName,
     createAdvisor,
+    updateAdvisor,
     isAdvisorUsedInTFGs,
     deleteAdvisor
 };

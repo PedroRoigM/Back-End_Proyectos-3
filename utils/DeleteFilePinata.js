@@ -1,34 +1,56 @@
-const pinataApiKey = process.env.PINATA_KEY;
-const pinataSecretApiKey = process.env.PINATA_SECRET;
+/**
+ * Utilidad para eliminar archivos de Pinata IPFS
+ * @module utils/DeleteFilePinata
+ */
+const config = require('../config');
+const logger = require('./logger');
 
+/**
+ * Elimina un archivo de Pinata IPFS usando su CID
+ * @async
+ * @param {string} url_file - URL del archivo en Pinata
+ * @returns {Promise<boolean>} true si la eliminación fue exitosa
+ * @throws {Error} Si ocurre algún error durante el proceso
+ */
 const DeleteFilePinata = async (url_file) => {
     try {
-        if (!url_file) throw new Error("La URL del archivo es inválida o está vacía.");
+        // Validar URL
+        if (!url_file) {
+            throw new Error("FILE_URL_INVALID");
+        }
 
         // Extraer el CID desde la URL del archivo
         const cidMatch = url_file.match(/ipfs\/(.+)$/);
-        if (!cidMatch) throw new Error("No se encontró un CID válido en la URL.");
+        if (!cidMatch) {
+            throw new Error("CID_NOT_FOUND");
+        }
 
         const cid = cidMatch[1];
+        logger.info(`Eliminando archivo con CID: ${cid}`);
 
-        // Llamar al endpoint correcto de Pinata
+        // Llamar al endpoint de Pinata
         const response = await fetch(`https://api.pinata.cloud/pinning/unpin/${cid}`, {
             method: 'DELETE',
             headers: {
-                'pinata_api_key': pinataApiKey,
-                'pinata_secret_api_key': pinataSecretApiKey
+                'pinata_api_key': config.PINATA_API_KEY,
+                'pinata_secret_api_key': config.PINATA_SECRET_KEY
             }
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Error al eliminar el archivo de Pinata: ${response.status} - ${errorText}`);
+            logger.error(`Error en respuesta de Pinata: ${response.status}`, { errorText });
+            throw new Error("PINATA_API_ERROR");
         }
 
-        console.log(`Archivo con CID ${cid} eliminado correctamente de Pinata.`);
+        logger.info(`Archivo con CID ${cid} eliminado correctamente`);
         return true;
     } catch (error) {
-        console.error("Error en DeleteFilePinata:", error.message);
+        // Registrar el error pero propagarlo para que lo maneje el servicio
+        logger.error('Error al eliminar archivo de Pinata', {
+            error: error.message,
+            url: url_file
+        });
         throw error;
     }
 };

@@ -28,6 +28,16 @@ const findDegreeByName = async (name) => {
 };
 
 /**
+ * Obtiene un grado por su ID
+ * @async
+ * @param {string} id - ID del grado
+ * @returns {Promise<Object|null>} Grado encontrado o null
+ */
+const getDegreeById = async (id) => {
+    return await degreesModel.findById(id);
+};
+
+/**
  * Crea un nuevo grado académico
  * @async
  * @param {Object} degreeData - Datos del grado
@@ -35,6 +45,21 @@ const findDegreeByName = async (name) => {
  */
 const createDegree = async (degreeData) => {
     return await degreesModel.create(degreeData);
+};
+
+/**
+ * Actualiza un grado académico existente
+ * @async
+ * @param {string} id - ID del grado
+ * @param {Object} updateData - Datos a actualizar
+ * @returns {Promise<Object|null>} Grado actualizado o null si no existe
+ */
+const updateDegree = async (id, updateData) => {
+    return await degreesModel.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+    );
 };
 
 /**
@@ -64,7 +89,9 @@ const deleteDegree = async (id) => {
 module.exports = {
     getAllDegrees,
     findDegreeByName,
+    getDegreeById,
     createDegree,
+    updateDegree,
     isDegreeUsedInTFGs,
     deleteDegree
 };
