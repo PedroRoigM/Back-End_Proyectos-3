@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2RiZTA5ODQxZjczNTdkMzJkOTg3ODQiLCJyb2xlIjoiYWRtaW5pc3RyYWRvciIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDI4MDI4MjMsImV4cCI6MTc0NDAxMjQyM30.P2MqpxP2tU-5M0gb0eiIh-O4j-HJB3b_szFq7tGNJ6M
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2UxMmQwODJkY2U0Y2ZhOGJiZjhlYjkiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDI4MTAzNzYsImV4cCI6MTc0NDAxOTk3Nn0.9P4IVFKN0p4CuMNcAeMBh0jJUCekf8Ex_byt6hj3PB4
 
 GET https://api-937n.onrender.com/api/users
 
@@ -26,7 +26,7 @@ Content-Type: application/json
 POST http://localhost:3000/api/users/register
 Content-Type: application/json
 
-{"name":"Pedro","email":"pedro3@gmail.com","password":"123456789"}
+{"name":"Pedro","email":"pedro.roig@live.u-tad.com","password":"123456789"}
 
 ###
 POST http://localhost:3000/api/users/validate
@@ -34,7 +34,7 @@ Authorization: {{authToken}}
 Content-Type: application/json
 
 {
-    "code": "473685"
+    "code": "670237"
 }
 
 ###
@@ -42,8 +42,8 @@ POST http://localhost:3000/api/users/login
 Content-Type: application/json
 
 {
-    "email": "juliana@example.com",
-    "password": "julian12345"
+    "email": "pedro.roig@live.u-tad.com",
+    "password": "123456789"
 }
 
 ###

@@ -68,12 +68,21 @@ const registerCtrl = async (req, res) => {
  */
 const loginCtrl = async (req, res) => {
     try {
-        const { email, password } = req.matchedData || req.body;
+        const { email, password } = req.body;
+
+        console.log('Intento de login:', {
+            email,
+            passwordLength: password.length
+        });
+
         const { user, token } = await userService.loginUser(email, password);
 
         createResponse(res, 200, { token, user });
     } catch (error) {
-        logger.error('Error en login de usuario', { error, email: req.body.email });
+        console.error('Error en login:', {
+            message: error.message,
+            status: error.status
+        });
         errorHandler(error, res);
     }
 };

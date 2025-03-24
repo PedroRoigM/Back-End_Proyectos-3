@@ -37,7 +37,7 @@ const getAllTFGs = async (filters = {}) => {
  * @returns {Promise<Object>} TFG encontrado
  * @throws {Error} Si el TFG no existe o no está verificado
  */
-const getTFGById = async (id) => {
+const getTFGById = async (id, verified) => {
     const tfg = await tfgsModel.findById(id).select('year degree student tfgTitle keywords advisor abstract verified');
 
     if (!tfg) {
@@ -46,7 +46,7 @@ const getTFGById = async (id) => {
         throw error;
     }
 
-    if (!tfg.verified) {
+    if (!tfg.verified && !verified) {
         const error = new Error('TFG_NOT_VERIFIED');
         error.status = 403;
         throw error;

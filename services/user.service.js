@@ -27,11 +27,7 @@ const getAllUsers = async () => {
  * @throws {Error} Si el usuario no existe
  */
 const getUserById = async (id) => {
-    const user = await usersModel.findById(id, {
-        password: 0,
-        code: 0,
-        attempts: 0
-    });
+    const user = await usersModel.findById(id);
 
     if (!user) {
         const error = new Error('USER_NOT_EXISTS');
@@ -39,8 +35,9 @@ const getUserById = async (id) => {
         throw error;
     }
 
-    return user;
+    return user.safeData; // Usando el virtual para datos seguros
 };
+
 
 /**
  * Obtiene un usuario por su email
@@ -62,9 +59,12 @@ const getUserByEmail = async (email, includePassword = false) => {
  * @throws {Error} Si el email ya existe
  */
 const registerUser = async (userData) => {
+    console.log('Iniciando registro de usuario:', userData);
+
     // Verificar que el email no exista
     const userWithEmail = await getUserByEmail(userData.email);
     if (userWithEmail) {
+        console.log('Usuario con este email ya existe');
         const error = new Error('EMAIL_ALREADY_EXISTS');
         error.status = 400;
         throw error;
@@ -72,22 +72,35 @@ const registerUser = async (userData) => {
 
     // Encriptar contraseña
     const hashedPassword = await encrypt(userData.password);
-    const newUserData = { ...userData, password: hashedPassword };
+    console.log('Hash de contraseña generado:', hashedPassword);
+
+    const newUserData = {
+        ...userData,
+        password: hashedPassword,
+        validated: true // Activar validación automáticamente para pruebas
+    };
 
     // Crear usuario
     const user = await usersModel.create(newUserData);
+    console.log('Usuario creado:', user);
 
     // Generar código de validación
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await usersModel.findByIdAndUpdate(user._id, { code }, { new: true });
 
-    // Eliminar campos sensibles
-    user.set('password', undefined, { strict: false });
+    // Preparar respuesta
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.code;
 
-    // Generar token y retornar datos
-    const token = await tokenSign(user);
+    // Generar token
+    const token = await tokenSign(userResponse);
 
-    return { user, token, verificationCode: code };
+    return {
+        user: userResponse,
+        token,
+        verificationCode: code
+    };
 };
 
 /**
@@ -99,50 +112,52 @@ const registerUser = async (userData) => {
  * @throws {Error} Si credenciales inválidas o cuenta no validada
  */
 const loginUser = async (email, password) => {
-    // Buscar usuario
-    const user = await usersModel.findOne({ email }).select('password name email validated role attempts');
+    console.log('Inicio de sesión - Información detallada:', {
+        email,
+        passwordReceived: password,
+        passwordLength: password.length
+    });
+
+    // Buscar usuario con todos los campos
+    const user = await usersModel.findOne({ email }).select('+password');
 
     if (!user) {
+        console.log('Usuario no encontrado');
         const error = new Error('USER_NOT_EXISTS');
         error.status = 404;
         throw error;
     }
 
-    if (!user.validated) {
-        const error = new Error('EMAIL_NOT_VALIDATED');
-        error.status = 401;
-        throw error;
-    }
+    console.log('Usuario encontrado:', {
+        email: user.email,
+        passwordStored: user.password
+    });
 
     // Verificar contraseña
-    const isValid = await compare(password, user.password);
+    const isValid = await user.comparePassword(password);
+
+    console.log('Resultado de verificación:', isValid);
 
     if (!isValid) {
-        // Incrementar intentos
-        await usersModel.findByIdAndUpdate(user._id, { $inc: { attempts: 1 } });
-
-        // Verificar intentos máximos
-        if (user.attempts >= 3) {
-            const error = new Error('MAX_ATTEMPTS');
-            error.status = 401;
-            throw error;
-        }
-
+        console.log('Contraseña inválida');
         const error = new Error('INVALID_PASSWORD');
         error.status = 401;
         throw error;
     }
 
+
     // Resetear contador de intentos
     await usersModel.findByIdAndUpdate(user._id, { attempts: 0 });
 
     // Eliminar campos sensibles
-    user.set('password', undefined, { strict: false });
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.code;
 
     // Generar token
-    const token = await tokenSign(user);
+    const token = await tokenSign(userResponse);
 
-    return { user, token };
+    return { user: userResponse, token };
 };
 
 /**

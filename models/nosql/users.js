@@ -23,7 +23,7 @@ const UserSchema = new mongoose.Schema(
             type: String,
             required: [true, 'La contraseña es obligatoria'],
             minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
-            select: false // No devuelve la contraseña en las consultas
+            select: true
         },
         role: {
             type: String,
@@ -66,8 +66,36 @@ UserSchema.index({ validated: 1 });
 
 // Método para verificar contraseña
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+    console.log('Método comparePassword - Información detallada:', {
+        candidatePassword,
+        storedHash: this.password
+    });
+
+    try {
+        // Probar múltiples variaciones
+        const variations = [
+            candidatePassword.trim(),
+            candidatePassword,
+            candidatePassword.replace(/\s/g, ''),
+            candidatePassword.normalize('NFC'),
+            candidatePassword.normalize('NFD')
+        ];
+
+        for (const variant of variations) {
+            console.log(`Probando variante: "${variant}"`);
+            const isMatch = await bcrypt.compare(variant, this.password);
+            console.log(`Resultado de variante "${variant}":`, isMatch);
+
+            if (isMatch) return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Error en comparación de contraseñas:', error);
+        return false;
+    }
 };
+
 
 // Método para generar código de validación
 UserSchema.methods.generateVerificationCode = function () {
@@ -82,23 +110,21 @@ UserSchema.methods.isLocked = function () {
     return this.attempts >= 5;
 };
 
-// Middleware pre-save para hashear la contraseña
-UserSchema.pre('save', async function (next) {
-    // Solo hashear si la contraseña ha sido modificada (o es nueva)
-    if (!this.isModified('password')) return next();
 
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
 
 // Método estático para buscar por correo electrónico
 UserSchema.statics.findByEmail = function (email) {
+    console.log('Buscando usuario por email:', email);
     return this.findOne({ email: email.toLowerCase() });
+};
+
+// Método para obtener datos seguros sin campos sensibles
+UserSchema.methods.getSafeData = function () {
+    const userObject = this.toObject();
+    delete userObject.password;
+    delete userObject.code;
+    delete userObject.attempts;
+    return userObject;
 };
 
 // Eliminar virtualmente en lugar de permanentemente
