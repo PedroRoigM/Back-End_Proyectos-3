@@ -66,11 +66,6 @@ UserSchema.index({ validated: 1 });
 
 // Método para verificar contraseña
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-    console.log('Método comparePassword - Información detallada:', {
-        candidatePassword,
-        storedHash: this.password
-    });
-
     try {
         // Probar múltiples variaciones
         const variations = [
@@ -82,9 +77,7 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
         ];
 
         for (const variant of variations) {
-            console.log(`Probando variante: "${variant}"`);
             const isMatch = await bcrypt.compare(variant, this.password);
-            console.log(`Resultado de variante "${variant}":`, isMatch);
 
             if (isMatch) return true;
         }
@@ -114,7 +107,6 @@ UserSchema.methods.isLocked = function () {
 
 // Método estático para buscar por correo electrónico
 UserSchema.statics.findByEmail = function (email) {
-    console.log('Buscando usuario por email:', email);
     return this.findOne({ email: email.toLowerCase() });
 };
 

@@ -59,12 +59,9 @@ const getUserByEmail = async (email, includePassword = false) => {
  * @throws {Error} Si el email ya existe
  */
 const registerUser = async (userData) => {
-    console.log('Iniciando registro de usuario:', userData);
-
     // Verificar que el email no exista
     const userWithEmail = await getUserByEmail(userData.email);
     if (userWithEmail) {
-        console.log('Usuario con este email ya existe');
         const error = new Error('EMAIL_ALREADY_EXISTS');
         error.status = 400;
         throw error;
@@ -72,17 +69,14 @@ const registerUser = async (userData) => {
 
     // Encriptar contraseña
     const hashedPassword = await encrypt(userData.password);
-    console.log('Hash de contraseña generado:', hashedPassword);
-
     const newUserData = {
         ...userData,
         password: hashedPassword,
-        validated: true // Activar validación automáticamente para pruebas
+        validated: false
     };
 
     // Crear usuario
     const user = await usersModel.create(newUserData);
-    console.log('Usuario creado:', user);
 
     // Generar código de validación
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -112,34 +106,19 @@ const registerUser = async (userData) => {
  * @throws {Error} Si credenciales inválidas o cuenta no validada
  */
 const loginUser = async (email, password) => {
-    console.log('Inicio de sesión - Información detallada:', {
-        email,
-        passwordReceived: password,
-        passwordLength: password.length
-    });
-
     // Buscar usuario con todos los campos
     const user = await usersModel.findOne({ email }).select('+password');
 
     if (!user) {
-        console.log('Usuario no encontrado');
         const error = new Error('USER_NOT_EXISTS');
         error.status = 404;
         throw error;
     }
-
-    console.log('Usuario encontrado:', {
-        email: user.email,
-        passwordStored: user.password
-    });
-
     // Verificar contraseña
     const isValid = await user.comparePassword(password);
 
-    console.log('Resultado de verificación:', isValid);
 
     if (!isValid) {
-        console.log('Contraseña inválida');
         const error = new Error('INVALID_PASSWORD');
         error.status = 401;
         throw error;

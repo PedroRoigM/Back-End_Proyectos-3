@@ -9,29 +9,14 @@ const encrypt = async (clearPassword) => {
 
         // Hashear de forma síncrona
         const hash = bcryptjs.hashSync(trimmedPassword, salt);
-
-        console.log('Proceso de encriptación:', {
-            originalPassword: clearPassword,
-            trimmedPassword,
-            salt,
-            hash
-        });
-
         return hash;
     } catch (error) {
-        console.error('Error en encriptación:', error);
         throw error;
     }
 };
 
 const compare = async (clearPassword, hashedPassword) => {
     try {
-        console.log('Comparación detallada:', {
-            clearPassword,
-            hashedPassword,
-            compareResult: bcryptjs.compareSync(clearPassword, hashedPassword)
-        });
-
         // Probar múltiples formas de comparación
         const methods = [
             () => bcryptjs.compareSync(clearPassword.trim(), hashedPassword),
@@ -42,7 +27,6 @@ const compare = async (clearPassword, hashedPassword) => {
 
         for (const method of methods) {
             const result = method();
-            console.log('Resultado de comparación:', result);
             if (result) return true;
         }
 
