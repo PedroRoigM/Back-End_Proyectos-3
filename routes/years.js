@@ -7,7 +7,8 @@ const router = express.Router();
 const {
     getYears,
     createYear,
-    deleteYear
+    deleteYear,
+    updateYear
 } = require('../controllers/years');
 const {
     validateIdMongo,

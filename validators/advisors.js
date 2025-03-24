@@ -9,6 +9,16 @@ const validateResults = (req, res, next) => {
     next();
 };
 
+/**
+ * Middleware personalizado para validar el formato de correo U-tad
+ */
+const validateUtadEmail = (value) => {
+    if (!isValidUtadEmail(value)) {
+        throw new Error('El email debe tener el formato nombre.apellido@u-tad.com o nombre.apellido@live.u-tad.com. También se acepta nombre.apellidoNumero.');
+    }
+    return true;
+};
+
 const validateIdMongo = [
     check('id')
         .isMongoId().withMessage('ID_MONGO_INVALID'),
@@ -29,16 +39,6 @@ const validateCreateAdvisor = [
         .isString().withMessage('DEPARTMENT_MUST_BE_STRING'),
     (req, res, next) => validateResults(req, res, next)
 ];
-
-/**
- * Middleware personalizado para validar el formato de correo U-tad
- */
-const validateUtadEmail = (value) => {
-    if (!isValidUtadEmail(value)) {
-        throw new Error('El email debe tener el formato nombre.apellido@u-tad.com o nombre.apellido@live.u-tad.com. También se acepta nombre.apellidoNumero.');
-    }
-    return true;
-};
 
 const validateUpdateAdvisor = [
     check('advisor')
