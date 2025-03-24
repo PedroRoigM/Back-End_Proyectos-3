@@ -1,379 +1,300 @@
 /**
-* Obtener lista de la base de datos
-* @param {*} req
-* @param {*} res
-*/
-const { matchedData } = require('express-validator')
-const { tfgsModel, yearsModel, degreesModel } = require('../models')
-const multer = require("multer");
-const uploadToPinata = require("../utils/UploadToPinata");
-const { handleHttpError } = require("../utils/handleError");
-const GetFilePinata = require("../utils/GetFilePinata")
-const DeleteFilePinata = require("../utils/DeleteFilePinata")
-const handlePdfToImg = require("../utils/handlePdfToImg")
-const PINATA_GATEWAY_URL = process.env.PINATA_GATEWAY_URL
+ * Controlador de TFGs
+ * @module controllers/tfgs
+ */
+const tfgService = require('../services/tfg.service');
+const fileService = require('../services/file.service');
+const { createResponse, errorHandler } = require('../utils/responseHandler');
+const logger = require('../utils/logger');
 
-const existsyear = async (year) => {
-    const search = await yearsModel.find({ year: year });
-    if (search.length == 0) {
-        return false
-    }
-    return true
-}
-const existsdegree = async (degree) => {
-    const search = await degreesModel.find({ degree: degree })
-    if (search.length == 0) {
-        return false
-    }
-    return true
-}
+/**
+ * Obtiene lista resumida de nombres de TFGs
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getTFGsNames = async (req, res) => {
     try {
-        const tfgs = await tfgsModel.find().select("_id, tfgTitle")
-        return res.status(200).json(tfgs)
-    } catch (err) {
-        handleHttpError(res, "ERROR_GETTING_TFGS_NAMES")
+        const tfgs = await tfgService.getTFGNames();
+        createResponse(res, 200, tfgs);
+    } catch (error) {
+        logger.error('Error obteniendo nombres de TFGs', { error });
+        errorHandler(error, res);
     }
-}
-// Petición GET para obtener todos los tfgs
-// Se obtiene una lista de todos los TFGs que hay en la base de datos
+};
+
+/**
+ * Obtiene todos los TFGs
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getTFGs = async (req, res) => {
     try {
-        const tfgs = await tfgsModel.find()
-        res.status(200).json(tfgs)
+        const filters = req.query;
+        const tfgs = await tfgService.getAllTFGs(filters);
+        createResponse(res, 200, tfgs);
     } catch (error) {
-        handleHttpError(res, "ERROR_GETTING_TFGS")
+        logger.error('Error obteniendo TFGs', { error, filters: req.query });
+        errorHandler(error, res);
     }
-}
-// Petición GET para obtener un TFG por su id
-// Se obtiene un TFG por su id, debe ser un ID de mongoDB
+};
+
+/**
+ * Obtiene un TFG por su ID
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getTFG = async (req, res) => {
     try {
-        const { id } = req.params
-        const tfg = await tfgsModel.findById({ _id: id }).select('year degree student tfgTitle keywords advisor abstract verified')
-        if (!tfg || !tfg.verified) {
-            return res.status(404).json({ message: "TFG not found or not verified" });
-        }
-        res.send(tfg)
+        const { id } = req.params;
+        const tfg = await tfgService.getTFGById(id);
+
+        // Incrementa contador de visualizaciones
+        await tfgService.incrementTFGViews(id);
+
+        createResponse(res, 200, tfg);
     } catch (error) {
-        handleHttpError(res, "ERROR_GETTING_TFG")
+        logger.error(`Error obteniendo TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
-}
-// Petición GET para obtener los 10 siguientes TFGs
-// Se obtiene una lista de los 10 siguientes TFGs que hay en la base de datos
+};
+
+/**
+ * Obtiene TFGs paginados con filtros
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getNextTFGS = async (req, res) => {
     try {
         const { page_number } = req.params;
-
-        // Obtener filtros tanto de req.query como de req.body
         const filters = { ...req.query, ...req.body };
 
-        let query = {};
-        if (filters.year) query.year = filters.year;
-        if (filters.degree) query.degree = filters.degree;
-
-        if (filters.advisor) query.advisor = filters.advisor;
-        if (filters.search) {
-            const searchRegex = { $regex: filters.search, $options: "i" };
-            query.$or = [
-                { student: searchRegex },
-                { tfgTitle: searchRegex },
-                { keywords: { $in: filters.search.split(" ") } },
-                { abstract: searchRegex }
-            ];
+        // Solo mostrar TFGs verificados a usuarios normales
+        if (req.user.role === 'usuario') {
+            filters.verified = true;
         }
-        query.verified = true;
 
-        const page = parseInt(page_number, 10) || 1;
-        const pageSize = 10;
-        const skip = (page - 1) * pageSize;
-
-        // Consulta principal
-        const [tfgs, totalTFGs] = await Promise.all([
-            tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
-                .skip(skip)
-                .limit(pageSize),
-            tfgsModel.countDocuments(query)
-        ]);
-
-        const totalPages = Math.ceil(totalTFGs / pageSize);
-
-        res.status(200).json({ tfgs, totalPages });
+        const result = await tfgService.getPaginatedTFGs(filters, parseInt(page_number));
+        createResponse(res, 200, result);
     } catch (error) {
-        handleHttpError(res, "ERROR_GETTING_TFGS")
+        logger.error('Error obteniendo TFGs paginados', { error, page: req.params.page_number, filters: req.body });
+        errorHandler(error, res);
     }
 };
-// Petición POST para crear un TFG
-// Se crea un TFG con los campos que se envíen en el body
-// Tras el POST quedará recibir el Link al archivo en el endpoint
+
+/**
+ * Crea un nuevo TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const createTFG = async (req, res) => {
     try {
-        // Verificar que la solicitud es de tipo JSON
-        if (!req.is('application/json')) {
-            return res.status(400).json({ message: "Se debe enviar una solicitud con formato JSON" });
+        const tfgData = req.body;
+
+        // Validar que existan el año y el grado
+        await tfgService.validateYearAndDegree(tfgData.year, tfgData.degree);
+
+        // Procesar keywords si vienen como string
+        if (typeof tfgData.keywords === 'string') {
+            tfgData.keywords = tfgData.keywords.split(',').map(kw => kw.trim());
         }
 
-        if (! await existsyear(req.body.year)) {
-            return res.status(400).json({ message: "El curso academico no es válido." })
-        }
+        const createdTFG = await tfgService.createTFG({
+            ...tfgData,
+            link: "undefined", // El link se actualizará después con el archivo
+            createdBy: req.user._id
+        });
 
-        if (! await existsdegree(req.body.degree)) {
-            return res.status(400).json({ message: "El grado académico no es válido." })
-        }
-
-        // Asegurarse de que req.body contiene los datos
-        let body = req.body;
-
-        // Verificar que el campo 'data' está presente y es un JSON válido
-        if (body.data) {
-            try {
-                body = JSON.parse(body.data); // Si 'data' es un string JSON, parsearlo
-            } catch (error) {
-                return res.status(400).json({ message: 'El campo "data" no contiene JSON válido' });
-            }
-        }
-
-        // Inicializar el link como "undefined"
-        body.link = "undefined";
-
-        // **Manejo de keywords**
-        if (typeof body.keywords === 'string') {
-            body.keywords = body.keywords.split(",").map(kw => kw.trim());
-        } else if (Array.isArray(body.keywords)) {
-            // No hacer nada si ya es un array
-        } else {
-            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
-        }
-        // Crear el nuevo TFG
-        const data = await tfgsModel.create(body);
-        res.status(201).json(data);
-
+        createResponse(res, 201, createdTFG);
     } catch (error) {
-        handleHttpError(res, "ERROR_CREATING_TFGS")
+        logger.error('Error creando TFG', { error, tfgData: req.body });
+        errorHandler(error, res);
     }
 };
-// Petición PATCH para actualizar un TFG, se actualiza solo los campos que se envíen en el body
-// En este caso se actualiza solo los campos que se envíen en el body, por lo que no es necesario enviar todos los campos del TFG
-/*const patchTFG = async (req, res) => {
-    try {
-        const { id } = req.params
-        const body = matchedData(req)
 
-        // **Manejo de keywords**
-        if (typeof body.keywords === 'string') {
-            body.keywords = body.keywords.split(",").map(kw => kw.trim());
-        } else if (!Array.isArray(body.keywords)) {
-            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
-        }
-
-        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: body }, { new: true })
-
-        res.send(tfg)
-    } catch (error) {
-        res.status(500).json({ message: error.message })
-    }
-}*/
-// Petición PUT para actualizar un TFG
-// En este caso se actualiza el TFG completo, por lo que se debe enviar todos los campos del TFG
+/**
+ * Actualiza un TFG completamente
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const putTFG = async (req, res) => {
     try {
-        const { id } = req.params
-        const { body } = req
-        if (!existsyear(req.body.year)) {
-            return res.status(400).json({ message: "El curso academico no es valido." })
-        }
-        if (!existsdegree(req.body.degree)) {
-            return res.status(400).json({ message: "El grado académico no es válido." })
-        }
-        // **Manejo de keywords**
-        if (typeof body.keywords === 'string') {
-            body.keywords = body.keywords.split(",").map(kw => kw.trim());
-        } else if (!Array.isArray(body.keywords)) {
-            body.keywords = []; // Si no es un array ni string, inicializar como array vacío
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // Validar que existan el año y el grado
+        await tfgService.validateYearAndDegree(updateData.year, updateData.degree);
+
+        // Procesar keywords si vienen como string
+        if (typeof updateData.keywords === 'string') {
+            updateData.keywords = updateData.keywords.split(',').map(kw => kw.trim());
         }
 
-        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: body }, { new: true })
-        res.send(tfg)
-    }
-    catch (error) {
-        handleHttpError(res, "ERROR_UPDATING_TFG")
-    }
-}
-// Petición DELETE para eliminar un TFG, hace un soft delete
-// El soft delete es una técnica que consiste en no eliminar físicamente un registro de la base de datos, sino que se marca como eliminado
-// Esto se hace añadiendo un campo booleano a la tabla que se llama deleted, en caso de que sea true significa que el registro ha sido eliminado
-// Luego hay que marcar un tiempo de expiración para que los registros eliminados se eliminen de la base de datos
-const deleteTFG = async (req, res) => {
-    try {
-        const { id } = req.params
-        // Eliminar el file del endpoint
-        await deleteFileTFG(req, res)
-        // Si no se ha eliminado el archivo, no se elimina el TFG
-        if (res.headersSent) return;
-        // Eliminar el TFG de la base de datos
-        await tfgsModel.delete({ _id: id })
-        res.status(204).send()
+        const updatedTFG = await tfgService.updateTFG(id, updateData);
+        createResponse(res, 200, updatedTFG);
     } catch (error) {
-        if (!res.headersSent) {
-            return res.status(500).json({ error: "ERROR_DELETING_TFG" });
-        }
+        logger.error(`Error actualizando TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
-}
-// Petición DELETE para eliminar un archivo PDF, debe eliminar el archivo del endpoint y actualizar el campo Link del TFG
-const deleteFileTFG = async (req, res) => {
+};
+
+/**
+ * Elimina un TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const deleteTFG = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Buscar el documento y verificar si tiene un enlace válido
-        const tfg = await tfgsModel.findById(id).select("link");
-        if (!tfg || !tfg.link) {
-            return res.status(404).json({ error: "No se encontró el archivo a eliminar" });
-        }
+        // Eliminar primero el archivo asociado
+        await fileService.deleteFile(id);
 
-        // Intentar eliminar el archivo de Pinata
-        try {
-            await DeleteFilePinata(tfg.link);
-        } catch (error) {
-            console.error("Error eliminando el archivo de Pinata:", error);
-            return res.status(500).json({ error: "Error eliminando archivo de Pinata" });
-        }
+        // Eliminar el TFG
+        await tfgService.deleteTFG(id);
 
-        // Actualizar el campo `link` y `verified`
-        const updatedTFG = await tfgsModel.findByIdAndUpdate(
-            id,
-            { $set: { link: undefined, verified: false } },
-            { new: true }
-        );
-
-        return res.json(updatedTFG);
+        createResponse(res, 204);
     } catch (error) {
-        console.error("Error en deleteFileTFG:", error);
-        if (!res.headersSent) {
-            return res.status(500).json({ error: "ERROR_DELETING_TFG_FILE" });
-        }
+        logger.error(`Error eliminando TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
 };
-// Petición PATCH para subir un archivo PDF, debe subir el archivo al endpoint y actualizar el campo Link del TFG
+
+/**
+ * Sube o actualiza el archivo PDF de un TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const patchFileTFG = async (req, res) => {
     try {
-        const { id } = req.params
-        const link = { link: "undefined" }
-        if (req.file) {
-            const fileBuffer = req.file.buffer;
-            const fileName = req.file.originalname;
-            const pinataResponse = await uploadToPinata(fileBuffer, fileName);
-            const ipfsFile = pinataResponse.IpfsHash;
-            const ipfs_url = `https://${PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`;
-            link.link = ipfs_url;
+        const { id } = req.params;
 
-            // eliminar el file del body
-            delete req.file;
-
+        if (!req.file) {
+            return errorHandler(new Error('NO_FILE_UPLOADED'), res);
         }
 
-        const tfg = await tfgsModel.findByIdAndUpdate(id, { $set: link }, { new: true })
-        res.send(tfg)
+        const fileBuffer = req.file.buffer;
+        const fileName = req.file.originalname;
+
+        // Validar el tipo de archivo
+        if (!fileName.toLowerCase().endsWith('.pdf')) {
+            return errorHandler(new Error('INVALID_FILE_TYPE'), res);
+        }
+
+        // Subir archivo y actualizar TFG
+        const fileUrl = await fileService.uploadFile(fileBuffer, fileName);
+        const updatedTFG = await tfgService.updateTFGFile(id, fileUrl);
+
+        createResponse(res, 200, updatedTFG);
     } catch (error) {
-        handleHttpError(res, "ERROR_UPDATING_TFG_FILE")
+        logger.error(`Error actualizando archivo de TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
-}
+};
+
+/**
+ * Verifica un TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const patchVerifiedTFG = async (req, res) => {
     try {
-        const { id } = req.params
-        const { verified } = req.body
-        const tfg = await tfgsModel
-            .findByIdAndUpdate(id, { verified }, { new: true })
-        res.send(tfg)
+        const { id } = req.params;
+        const { verified, reason } = req.body;
+
+        const updatedTFG = await tfgService.verifyTFG(id, {
+            verified,
+            reason,
+            verifiedBy: req.user._id
+        });
+
+        createResponse(res, 200, updatedTFG);
+    } catch (error) {
+        logger.error(`Error verificando TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
-    catch (error) {
-        handleHttpError(res, "ERROR_VERIFYING_TFG")
-    }
-}
+};
+
+/**
+ * Obtiene el archivo PDF de un TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getFileTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        const tfg = await tfgsModel.findById(id);
-        if (!tfg) {
-            return res.status(404).json({ message: "TFG not found" });
-        }
-        // Petición a PINATA para obtener el archivo
-        const fileBuffer = await GetFilePinata(tfg.link);
+
+        // Incrementa contador de descargas
+        await tfgService.incrementTFGDownloads(id);
+
+        // Obtener el archivo
+        const { fileBuffer, fileName } = await fileService.getTFGFile(id);
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="tfg_${id}.pdf"`);
-
-        res.send(Buffer.from(fileBuffer)); // Convertir ArrayBuffer a Buffer
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName || 'tfg_' + id + '.pdf'}"`);
+        res.send(Buffer.from(fileBuffer));
     } catch (error) {
-        console.error(error);
-        handleHttpError(res, "ERROR_GETTING_TFG_FILE");
+        logger.error(`Error obteniendo archivo de TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
 };
-// TODO: getFilePhotosTFG (funcion para obtener las fotos de un TFG, de esta manera será más seguro para que los usuarios no puedan descargar los archivos)
-// ? Funcionalidad parecida a getFileTFG pero para las fotos de los TFGs, hay que transformar los pdf a imágenes y enviarlas al frontend
-// ? Se utiliza la función handlePdfToImg para convertir el pdf a imágenes
-// ? Se debe enviar un array de imágenes al frontend
+
+/**
+ * Obtiene imágenes de las páginas del PDF de un TFG
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getFilePhotosTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        const tfg = await tfgsModel.findById(id);
-        if (!tfg) {
-            return res.status(404).json({ message: "TFG not found" });
-        }
-
-        // Petición a PINATA para obtener el archivo
-        const fileBuffer = await GetFilePinata(tfg.link);
-
-        // Convertir el pdf a imágenes
-        const images = await handlePdfToImg(fileBuffer);
-
-        res.status(200).json(images);
+        const images = await fileService.getPDFImages(id);
+        createResponse(res, 200, images);
     } catch (error) {
-        console.error(error);
-        handleHttpError(res, "ERROR_GETTING_TFG_PHOTOS");
+        logger.error(`Error obteniendo imágenes de TFG ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
 };
 
-// Buscar los pdfs que aún no han sido validados
-// Se obtiene una lista de los 10 siguientes TFGs que hay en la base de datos
+/**
+ * Obtiene TFGs no verificados
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getUnverifiedTFGs = async (req, res) => {
     try {
         const { page_number } = req.params;
+        const filters = { ...req.query, ...req.body, verified: false };
 
-        // Obtener filtros tanto de req.query como de req.body
-        const filters = { ...req.query, ...req.body };
-
-        let query = {};
-        if (filters.year) query.year = filters.year;
-        if (filters.degree) query.degree = filters.degree;
-
-        if (filters.advisor) query.advisor = filters.advisor;
-        if (filters.search) {
-            const searchRegex = { $regex: filters.search, $options: "i" };
-            query.$or = [
-                { student: searchRegex },
-                { tfgTitle: searchRegex },
-                { keywords: { $in: filters.search.split(" ") } },
-                { abstract: searchRegex }
-            ];
-        }
-        query.verified = false;
-
-        const page = parseInt(page_number, 10) || 1;
-        const pageSize = 10;
-        const skip = (page - 1) * pageSize;
-        // Consulta principal
-        const [tfgs, totalTFGs] = await Promise.all([
-            tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
-                .skip(skip)
-                .limit(pageSize),
-            tfgsModel.countDocuments(query)
-        ]);
-
-        const totalPages = Math.ceil(totalTFGs / pageSize);
-
-        res.status(200).json({ tfgs, totalPages });
-    } catch (err) {
-        handleHttpError(res, "ERROR_GETTING_UNVERIFIED_TFGS")
+        const result = await tfgService.getPaginatedTFGs(filters, parseInt(page_number));
+        createResponse(res, 200, result);
+    } catch (error) {
+        logger.error('Error obteniendo TFGs no verificados', { error, page: req.params.page_number });
+        errorHandler(error, res);
     }
-}
-module.exports = { getTFGs, getTFG, getTFGsNames, getNextTFGS, createTFG, putTFG, deleteTFG, patchFileTFG, patchVerifiedTFG, getFileTFG, getFilePhotosTFG, getUnverifiedTFGs };
+};
+
+module.exports = {
+    getTFGs,
+    getTFG,
+    getTFGsNames,
+    getNextTFGS,
+    createTFG,
+    putTFG,
+    deleteTFG,
+    patchFileTFG,
+    patchVerifiedTFG,
+    getFileTFG,
+    getFilePhotosTFG,
+    getUnverifiedTFGs
+};

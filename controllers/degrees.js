@@ -1,46 +1,78 @@
 /**
-* Obtener lista de la base de datos
-* @param {*} req
-* @param {*} res
-*/
-const { matchedData } = require('express-validator')
-const { degreesModel } = require('../models')
-// Petición GET para obtener todos los grados
-// Se obtiene una lista de todos los grados que hay en la base de datos
+ * Controlador de grados académicos
+ * @module controllers/degrees
+ */
+const degreeService = require('../services/degree.service');
+const { createResponse, errorHandler } = require('../utils/responseHandler');
+const logger = require('../utils/logger');
+
+/**
+ * Obtiene todos los grados académicos
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getDegrees = async (req, res) => {
     try {
-        const degrees = await degreesModel.find().select("_id degree")
-        res.status(200).json(degrees)
+        const onlyActive = req.query.active === 'true';
+        const degrees = await degreeService.getAllDegrees(onlyActive);
+        createResponse(res, 200, degrees);
     } catch (error) {
-        handleHttpError(res, "ERROR_GETTING_DEGREES")
+        logger.error('Error obteniendo grados académicos', { error });
+        errorHandler(error, res);
     }
-}
-// Petición POST para crear un grado
-// Se crea un grado en la base de datos
-// Debe recibir un grado y el usuario que lo ha creado (id de mongoDB)
+};
+
+/**
+ * Crea un nuevo grado académico
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const createDegree = async (req, res) => {
     try {
-        const data = matchedData(req)
-        const degree = await degreesModel.create(data)
-        res.status(201).json(degree)
+        const degreeData = req.matchedData || req.body;
+
+        // Verificar si ya existe un grado con el mismo nombre
+        const existingDegree = await degreeService.findDegreeByName(degreeData.degree);
+        if (existingDegree) {
+            return errorHandler(new Error('DEGREE_ALREADY_EXISTS'), res);
+        }
+
+        const createdDegree = await degreeService.createDegree(degreeData);
+        createResponse(res, 201, createdDegree);
     } catch (error) {
-        handleHttpError(res, "ERROR_CREATING_DEGREES")
+        logger.error('Error creando grado académico', { error, degreeData: req.body });
+        errorHandler(error, res);
     }
-}
-// Petición DELETE para eliminar un grado
-// Se elimina un grado de la base de datos por su id
+};
+
+/**
+ * Elimina un grado académico
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const deleteDegree = async (req, res) => {
     try {
-        const { id } = req.params
-        const degree = await degreesModel.findByIdAndDelete(id)
-        res.status(200).json(degree)
+        const { id } = req.params;
+
+        // Verificar si el grado está asociado a TFGs
+        const isUsed = await degreeService.isDegreeUsedInTFGs(id);
+        if (isUsed) {
+            return errorHandler(new Error('DEGREE_IN_USE'), res);
+        }
+
+        const deletedDegree = await degreeService.deleteDegree(id);
+        createResponse(res, 200, deletedDegree);
     } catch (error) {
-        handleHttpError(res, "ERROR_DELETING_DEGREES")
+        logger.error(`Error eliminando grado académico ${req.params.id}`, { error });
+        errorHandler(error, res);
     }
-}
-// Exportar controladores
+};
+
 module.exports = {
     getDegrees,
     createDegree,
     deleteDegree
-}
+};

@@ -1,48 +1,83 @@
 /**
-* Obtener lista de la base de datos
-* @param {*} req
-* @param {*} res
-*/
-const { matchedData } = require('express-validator')
-const { yearsModel } = require('../models')
-const handleHttpError = require("../utils/handleError")
-// Petición GET para obtener todos los años
-// Se obtiene una lista de todos los años que hay en la base de datos
+ * Controlador de años académicos
+ * @module controllers/years
+ */
+const yearService = require('../services/year.service');
+const { createResponse, errorHandler } = require('../utils/responseHandler');
+const logger = require('../utils/logger');
+
+/**
+ * Obtiene todos los años académicos
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const getYears = async (req, res) => {
     try {
-        const years = await yearsModel.find().select("_id year")
-        res.status(200).json(years)
+        const onlyActive = req.query.active === 'true';
+        const years = await yearService.getAllYears(onlyActive);
+        createResponse(res, 200, years);
     } catch (error) {
-        handleHttpError(res, "ERROR_GETTING_YEARS")
+        logger.error('Error obteniendo años académicos', { error });
+        errorHandler(error, res);
     }
-}
-// Petición POST para crear un año
-// Se crea un año en la base de datos
-// Debe recibir un año con formato XX/XX (ejemplo: 21/22)
+};
+
+/**
+ * Crea un nuevo año académico
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const createYear = async (req, res) => {
     try {
-        const data = matchedData(req)
-        const year = await yearsModel.create(data)
-        res.status(201).json(year)
+        const yearData = req.matchedData || req.body;
+
+        // Verificar el formato del año (XX/XX)
+        if (!/^\d{2}\/\d{2}$/.test(yearData.year)) {
+            return errorHandler(new Error('INVALID_YEAR_FORMAT'), res);
+        }
+
+        // Verificar si ya existe un año con el mismo nombre
+        const existingYear = await yearService.findYearByName(yearData.year);
+        if (existingYear) {
+            return errorHandler(new Error('YEAR_ALREADY_EXISTS'), res);
+        }
+
+        const createdYear = await yearService.createYear(yearData);
+        createResponse(res, 201, createdYear);
     } catch (error) {
-        handleHttpError(res, "ERROR_CREATING_YEAR")
+        logger.error('Error creando año académico', { error, yearData: req.body });
+        errorHandler(error, res);
     }
-}
-// Petición DELETE para eliminar un año
-// Se elimina un año de la base de datos por su id
+};
+
+/**
+ * Elimina un año académico
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
 const deleteYear = async (req, res) => {
     try {
-        const { id } = req.params
-        const year = await yearsModel.findByIdAndDelete(id)
-        res.status(200).json(year)
-    } catch (error) {
-        handleHttpError(res, "ERROR_DELETING_YEAR")
-    }
-}
+        const { id } = req.params;
 
-// Exportar controladores
+        // Verificar si el año está asociado a TFGs
+        const isUsed = await yearService.isYearUsedInTFGs(id);
+        if (isUsed) {
+            return errorHandler(new Error('YEAR_IN_USE'), res);
+        }
+
+        const deletedYear = await yearService.deleteYear(id);
+        createResponse(res, 200, deletedYear);
+    } catch (error) {
+        logger.error(`Error eliminando año académico ${req.params.id}`, { error });
+        errorHandler(error, res);
+    }
+};
+
 module.exports = {
     getYears,
     createYear,
     deleteYear
-}
+};

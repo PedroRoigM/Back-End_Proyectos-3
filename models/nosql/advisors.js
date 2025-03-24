@@ -2,8 +2,70 @@ const mongoose = require('mongoose');
 const mongooseDelete = require('mongoose-delete');
 
 const AdvisorSchema = new mongoose.Schema({
-    "advisor": { type: String, required: true, unique: true }, // Nombre del asesor
+    advisor: {
+        type: String,
+        required: [true, 'El nombre del tutor es obligatorio'],
+        unique: true,
+        trim: true,
+        index: true
+    },
+    email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Por favor ingrese un email válido']
+    },
+    department: {
+        type: String,
+        trim: true
+    },
+    specialties: {
+        type: [String],
+        default: []
+    },
+    active: {
+        type: Boolean,
+        default: true
+    }
+}, {
+    timestamps: true,
+    versionKey: false
 });
 
-AdvisorSchema.plugin(mongooseDelete, { overrideMethods: true }); // Añadimos el plugin mongoose-delete
-module.exports = mongoose.model('advisors', AdvisorSchema); // Exportamos el modelo Advisor
+// Índices para mejora de rendimiento
+AdvisorSchema.index({ active: 1 });
+AdvisorSchema.index({ department: 1 });
+AdvisorSchema.index({ specialties: 1 });
+
+// Método para obtener tutores activos
+AdvisorSchema.statics.findActive = function () {
+    return this.find({ active: true });
+};
+
+// Método para buscar por especialidad
+AdvisorSchema.statics.findBySpecialty = function (specialty) {
+    return this.find({
+        specialties: specialty,
+        active: true
+    });
+};
+
+// Middleware para transformar los nombres a un formato consistente
+AdvisorSchema.pre('save', function (next) {
+    // Capitalizar cada palabra del nombre
+    if (this.advisor) {
+        this.advisor = this.advisor
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+    next();
+});
+
+// Plugin para eliminación suave
+AdvisorSchema.plugin(mongooseDelete, {
+    overrideMethods: true,
+    deletedAt: true
+});
+
+module.exports = mongoose.model('advisors', AdvisorSchema);

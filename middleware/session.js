@@ -1,36 +1,34 @@
-const { handleHttpError } = require("../utils/handleError")
-const { verifyToken } = require("../utils/handleJwt")
-const { usersModel } = require("../models")
+const { verifyToken } = require("../utils/handleJwt");
+const { usersModel } = require("../models");
+const { errorHandler } = require("../utils/responseHandler");
 
 const authMiddleware = async (req, res, next) => {
     try {
-        if (!req.headers.authorization) {
-            handleHttpError(res, "NOT_TOKEN", 401)
-            return
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return errorHandler(new Error('NOT_TOKEN'), res);
         }
-        const token = req.headers.authorization.split(" ").pop()
-        const dataToken = await verifyToken(token)
-        if (!dataToken._id) {
-            handleHttpError(res, "ERROR_ID_TOKEN", 401)
-            return
-        }
-        const user = await usersModel.findById(dataToken._id)
 
+        const token = authHeader.split(" ").pop();
+        const dataToken = await verifyToken(token);
+        if (!dataToken || !dataToken._id) {
+            return errorHandler(new Error('INVALID_TOKEN'), res);
+        }
+
+        const user = await usersModel.findById(dataToken._id);
         if (!user) {
-            handleHttpError(res, "USER_NOT_FOUND", 404)
-            return
+            return errorHandler(new Error('USER_NOT_EXISTS'), res);
         }
-        if (req.url !== '/validate') {
-            if (!user.validated) {
-                handleHttpError(res, "EMAIL_NOT_VALIDATED", 401)
-                return
-            }
-        }
-        req.user = user
-        next()
-    } catch (err) {
-        handleHttpError(res, "NOT_SESSION", 401)
-    }
-}
 
-module.exports = authMiddleware 
+        if (req.url !== '/validate' && !user.validated) {
+            return errorHandler(new Error('EMAIL_NOT_VALIDATED'), res);
+        }
+
+        req.user = user;
+        next();
+    } catch (err) {
+        return errorHandler(new Error('INVALID_TOKEN'), res);
+    }
+};
+
+module.exports = authMiddleware;

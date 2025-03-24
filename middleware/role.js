@@ -1,17 +1,20 @@
-const { handleHttpError } = require("../utils/handleError")
+const { errorHandler } = require("../utils/responseHandler");
+
 const checkRole = (roles) => (req, res, next) => {
     try {
-        const { user } = req
-        const userRole = user.role
-        const checkValueRole = roles.includes(userRole)
-        if (!checkValueRole) {
-            handleHttpError(res, "NOT_ALLOWED", 403)
-            return
+        const { user } = req;
+        if (!user || !user.role) {
+            return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
         }
-        next()
-    } catch (err) {
-        handleHttpError(res, "ERROR_PERMISSIONS", 403)
-    }
-}
 
-module.exports = checkRole 
+        if (!roles.includes(user.role)) {
+            return errorHandler(new Error('NOT_ALLOWED'), res);
+        }
+
+        next();
+    } catch (err) {
+        return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
+    }
+};
+
+module.exports = checkRole;
