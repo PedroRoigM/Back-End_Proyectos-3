@@ -1,300 +1,301 @@
 openapi: 3.0.0
 info:
-  title: API de TFGs y Usuarios
+  title: API de Repositorio de TFGs
   version: 1.0.0
-  description: API para gestionar TFGs y usuarios en la plataforma
+  description: |
+    API para la gestión de Trabajos de Fin de Grado (TFGs) en una plataforma académica. 
+    Permite administrar usuarios, tutores, grados académicos, años académicos y TFGs con sus archivos asociados.
+  contact:
+    email: soporte@tfgs-repository.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: /api
+    description: Servidor API de producción
+  - url: http://localhost:3000/api
+    description: Servidor local de desarrollo
+
+tags:
+  - name: Autenticación
+    description: Operaciones relacionadas con el registro e inicio de sesión
+  - name: Usuarios
+    description: Gestión de usuarios del sistema
+  - name: TFGs
+    description: Gestión de Trabajos de Fin de Grado
+  - name: Años Académicos
+    description: Gestión de años académicos
+  - name: Grados Académicos
+    description: Gestión de grados y titulaciones académicas
+  - name: Tutores
+    description: Gestión de tutores/asesores de TFGs
+
 paths:
-  /tfgs:
-    get:
-      summary: Obtener todos los TFGs
-      operationId: getTFGs
-      tags:
-        - TFGs
-      responses:
-        "200":
-          description: Lista de TFGs obtenida correctamente
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TFG"
+  #
+  # AUTENTICACIÓN
+  #
+  /users/register:
     post:
-      summary: Crear un nuevo TFG - Esta petición inicializa el Link como undefined, requiere un patch para añadir el PDF
-      operationId: createTFG
+      summary: Registrar un nuevo usuario
+      description: Crea una nueva cuenta de usuario en el sistema
+      operationId: registerUser
       tags:
-        - TFGs
+        - Autenticación
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/TFGCreateAndUpdate"
+              $ref: "#/components/schemas/UserCreate"
       responses:
         "201":
-          description: "TFG creado correctamente"
-  /tfgs/names:
-    get:
-      summary: Obtener los nombres e ids de los TFGs
-      operationId: getTFGnames
+          description: Usuario registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El email ya está registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /users/login:
+    post:
+      summary: Iniciar sesión
+      description: Autentica un usuario existente y devuelve un token JWT
+      operationId: loginUser
       tags:
-        - TFGs
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: nombre.apellido@u-tad.com
+                password:
+                  type: string
+                  format: password
+                  example: "Password123"
       responses:
         "200":
-          description: Nombres de TFGs obtenido correctamente
+          description: Autenticación correcta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /users/validate:
+    post:
+      summary: Validar cuenta con código de verificación
+      description: Valida una cuenta de usuario con el código enviado al email
+      operationId: validateUser
+      tags:
+        - Autenticación
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                  example: "123456"
+      responses:
+        "200":
+          description: Cuenta validada correctamente
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  _id:
+                  message:
                     type: string
-                  tfgTitle:
-                    type: string
-  /tfgs/{id}:
-    get:
-      summary: Obtener un TFG por ID
-      operationId: getTFG
-      tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: TFG obtenido correctamente
+                    example: "Cuenta validada correctamente"
+        "401":
+          description: Código inválido o intentos excedidos
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TFG"
-    put:
-      summary: Actualizar un TFG completamente
-      operationId: putTFG
+                $ref: "#/components/schemas/Error"
+
+  /users/recover-password:
+    post:
+      summary: Solicitar recuperación de contraseña
+      description: Envía un código de verificación al email para recuperar la contraseña
+      operationId: requestRecoverPassword
       tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - Autenticación
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TFG"
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: nombre.apellido@u-tad.com
       responses:
         "200":
-          description: TFG actualizado correctamente
-    delete:
-      summary: Eliminar un TFG
-      operationId: deleteTFG
-      tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: TFG eliminado correctamente
-  /tfgs/pdf/{id}:
-    get:
-      summary: Obtener el PDF
-      operationId: getTfgPDF
-      tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: PDF obtenido correctamente
+          description: Código enviado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Código enviado al email"
+        "404":
+          description: Email no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
     patch:
-      summary: Actualizar el PDF de un TFG
-      operationId: patchPDF
+      summary: Cambiar contraseña con código de verificación
+      description: Restablece la contraseña usando el código enviado al email
+      operationId: recoverPassword
       tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                filename:
-                  type: string
-      responses:
-        "200":
-          description: PDF actualizado correctamente
-  /tfgs/pages/{page_number}:
-    post:
-      summary: Obtener los siguientes 10 TFGs con filtros opcionales
-      operationId: getNextTFGs
-      tags:
-        - TFGs
-      parameters:
-        - name: page_number
-          in: path
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: Número de la página a obtener.
-        - name: year
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Año del TFG.
-        - name: degree
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Titulación del TFG.
-        - name: advisor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Nombre del tutor.
-        - name: search
-          in: query
-          required: false
-          schema:
-            type: string
-          description: String búsqueda para los demás campos.
-      responses:
-        "200":
-          description: Lista de TFGs obtenida correctamente
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TFG"
-        "500":
-          description: Error interno del servidor
-  /tfgs/verify/{id}:
-    patch:
-      summary: Verificar un TFG
-      operationId: patchVerify
-      tags:
-        - TFGs
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - Autenticación
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - code
+                - password
               properties:
-                verified:
-                  type: boolean
-                reason:
+                email:
                   type: string
+                  format: email
+                  example: nombre.apellido@u-tad.com
+                code:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                  example: "123456"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 16
+                  example: "NewPassword123"
       responses:
         "200":
-          description: TFG verificado correctamente
-  paths:
+          description: Contraseña restablecida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contraseña restablecida correctamente"
+        "400":
+          description: Nueva contraseña igual a la anterior
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Código inválido o intentos excedidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  #
+  # USUARIOS
+  #
   /users:
     get:
       summary: Obtener todos los usuarios
+      description: Recupera la lista de todos los usuarios registrados (requiere autenticación)
       operationId: getUsers
       tags:
         - Usuarios
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Token de autenticación
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Lista de usuarios obtenida correctamente
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
-  /users/register:
-    post:
-      summary: Crear un nuevo usuario
-      operationId: createUser
-      tags:
-        - Usuarios
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User"
-      responses:
-        "200":
-          description: Usuario creado correctamente
-  /users/login:
-    post:
-      summary: Iniciar sesión
-      operationId: loginUser
-      tags:
-        - Usuarios
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-      responses:
-        "200":
-          description: Usuario logueado correctamente
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /users/{id}:
     get:
       summary: Obtener un usuario por ID
+      description: Recupera los datos de un usuario específico por su ID
       operationId: getUser
       tags:
         - Usuarios
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del usuario a consultar
           schema:
             type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
       responses:
         "200":
           description: Usuario obtenido correctamente
@@ -302,102 +303,625 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
     patch:
-      summary: Actualizar un usuario
+      summary: Actualizar datos de usuario
+      description: Actualiza parcialmente los datos de un usuario
       operationId: updateUser
       tags:
         - Usuarios
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del usuario a actualizar
           schema:
             type: string
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Token de autenticación
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: "#/components/schemas/UserUpdate"
       responses:
         "200":
           description: Usuario actualizado correctamente
-  /users/recover-password:
-    post:
-      summary: Solicitar recuperación de contraseña
-      operationId: requestRecoverPassword
-      tags:
-        - Usuarios
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-      responses:
-        "200":
-          description: Solicitud de recuperación enviada correctamente
-        "404":
-          description: El usuario no existe
-        "403":
-          description: Error en la petición
-
-    patch:
-      summary: Restablecer contraseña
-      operationId: recoverPassword
-      tags:
-        - Usuarios
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                code:
-                  type: string
-                password:
-                  type: string
-      responses:
-        "200":
-          description: Contraseña restablecida correctamente
-        "401":
-          description: Número de intentos excedido
-        "403":
-          description: Error en la petición
-
-  /years:
-    get:
-      summary: Obtener los año academicos
-      operationId: getYears
-      tags:
-        - years
-      responses:
-        "200":
-          description: Años obtenidos correctamente
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Years"
-    post:
-      summary: Crear un nuevo año academico
-      operationId: createYear
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: No autorizado para actualizar este usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Eliminar un usuario
+      description: Elimina un usuario del sistema (solo administradores)
+      operationId: deleteUser
       tags:
-        - years
+        - Usuarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del usuario a eliminar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "200":
+          description: Usuario eliminado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario eliminado correctamente"
+        "401":
+          description: No autorizado para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  #
+  # TFGs
+  #
+  /tfgs:
+    get:
+      summary: Obtener todos los TFGs
+      description: Recupera la lista completa de TFGs según los permisos del usuario
+      operationId: getTFGs
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Filtrar por año académico (formato XX/XX)
+          required: false
+          schema:
+            type: string
+            pattern: "^[0-9]{2}/[0-9]{2}$"
+          example: "22/23"
+        - name: degree
+          in: query
+          description: Filtrar por titulación
+          required: false
+          schema:
+            type: string
+        - name: verified
+          in: query
+          description: Filtrar por estado de verificación
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista de TFGs obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TFG"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: Crear un nuevo TFG
+      description: |
+        Registra un nuevo TFG en el sistema. 
+        Esta petición inicializa el TFG sin el archivo PDF adjunto.
+        Para añadir el PDF, se debe realizar una petición PATCH a /tfgs/pdf/{id} posteriormente.
+      operationId: createTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TFGCreate"
+      responses:
+        "201":
+          description: TFG creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/names:
+    get:
+      summary: Obtener nombres e IDs de TFGs
+      description: Recupera una lista resumida con solo los nombres e IDs de los TFGs verificados
+      operationId: getTFGNames
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de nombres e IDs obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      format: mongodb-id
+                      example: "605476e291c9e8bc6043a4c7"
+                    tfgTitle:
+                      type: string
+                      example: "Desarrollo de un sistema de recomendación basado en machine learning"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/{id}:
+    get:
+      summary: Obtener un TFG por ID
+      description: Recupera los detalles completos de un TFG específico
+      operationId: getTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG a consultar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "200":
+          description: TFG obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "403":
+          description: TFG no verificado (usuarios sin permisos especiales)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Actualizar un TFG completamente
+      description: Actualiza todos los campos de un TFG existente (requiere roles admin/coordinador)
+      operationId: putTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG a actualizar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TFGUpdate"
+      responses:
+        "200":
+          description: TFG actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      summary: Actualizar un TFG parcialmente
+      description: |
+        Actualiza parcialmente los datos de un TFG existente (requiere roles admin/coordinador).
+        Permite modificar solo campos específicos sin necesidad de enviar todos los campos.
+      operationId: patchTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG a actualizar parcialmente
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TFGPartialUpdate"
+      responses:
+        "200":
+          description: TFG actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Eliminar un TFG
+      description: |
+        Elimina un TFG existente y su archivo PDF asociado (requiere roles admin/coordinador).
+        Esta operación elimina tanto los metadatos del TFG como el archivo PDF almacenado.
+      operationId: deleteTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG a eliminar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "204":
+          description: TFG eliminado correctamente
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/pdf/{id}:
+    get:
+      summary: Descargar el PDF de un TFG
+      description: |
+        Obtiene el archivo PDF asociado a un TFG. 
+        Al descargar el archivo, se incrementa el contador de descargas del TFG.
+      operationId: getTFGPDF
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG cuyo PDF se desea descargar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "200":
+          description: PDF del TFG
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: No tiene permisos para acceder a este documento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG o archivo PDF no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      summary: Subir o actualizar el PDF de un TFG
+      description: |
+        Sube o actualiza el archivo PDF asociado a un TFG.
+        Solo acepta archivos con extensión .pdf
+      operationId: patchTFGPDF
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG cuyo PDF se desea actualizar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo PDF del TFG
+      responses:
+        "200":
+          description: Archivo PDF subido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "400":
+          description: No se subió archivo o tipo de archivo inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Error al subir el archivo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/pdf/images/{id}:
+    get:
+      summary: Obtener imágenes del PDF de un TFG
+      description: |
+        Obtiene imágenes generadas a partir de las páginas del PDF de un TFG.
+        Útil para previsualizar el contenido sin descargar el archivo completo.
+      operationId: getTFGPDFImages
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG cuyas imágenes del PDF se desean obtener
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "200":
+          description: Lista de URLs de imágenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: "https://example.com/images/tfg_605476e291c9e8bc6043a4c7_page1.jpg"
+        "403":
+          description: No tiene permisos para acceder a este documento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG o archivo PDF no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/verify/{id}:
+    patch:
+      summary: Verificar o rechazar un TFG
+      description: |
+        Cambia el estado de verificación de un TFG (requiere roles admin/coordinador).
+        Permite aprobar o rechazar un TFG para su publicación, incluyendo un motivo.
+      operationId: verifyTFG
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del TFG a verificar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - verified
+                - reason
+              properties:
+                verified:
+                  type: boolean
+                  description: Estado de verificación (true=aprobado, false=rechazado)
+                  example: true
+                reason:
+                  type: string
+                  description: Motivo de la verificación o rechazo
+                  minLength: 10
+                  example: "El TFG cumple con todos los requisitos académicos y formales."
+      responses:
+        "200":
+          description: Estado de verificación actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TFG"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: TFG no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/pages/{page_number}:
+    post:
+      summary: Obtener TFGs paginados con filtros
+      description: |
+        Recupera una lista paginada de TFGs aplicando diversos filtros.
+        Permite realizar búsquedas y filtrar por diferentes criterios.
+      operationId: getPaginatedTFGs
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page_number
+          in: path
+          required: true
+          description: Número de página a obtener (inicia en 1)
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
@@ -405,187 +929,1206 @@ paths:
               properties:
                 year:
                   type: string
+                  description: Filtrar por año académico (formato XX/XX)
+                  pattern: "^[0-9]{2}/[0-9]{2}$"
+                  example: "22/23"
+                degree:
+                  type: string
+                  description: Filtrar por titulación académica
+                  example: "Ingeniería Informática"
+                advisor:
+                  type: string
+                  description: Filtrar por tutor/asesor
+                  example: "Dr. Antonio García"
+                search:
+                  type: string
+                  description: Término de búsqueda general (se aplica a título, keywords, estudiante, abstract)
+                  example: "inteligencia artificial"
+      responses:
+        "200":
+          description: Lista paginada de TFGs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tfgs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TFG"
+                  totalPages:
+                    type: integer
+                    example: 10
+                  currentPage:
+                    type: integer
+                    example: 1
+                  totalTFGs:
+                    type: integer
+                    example: 95
+        "400":
+          description: Parámetros de búsqueda inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tfgs/unverified/{page_number}:
+    post:
+      summary: Obtener TFGs no verificados (admin/coordinador)
+      description: |
+        Recupera una lista paginada de TFGs pendientes de verificación.
+        Esta endpoint solo está disponible para administradores y coordinadores.
+      operationId: getUnverifiedTFGs
+      tags:
+        - TFGs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page_number
+          in: path
+          required: true
+          description: Número de página a obtener (inicia en 1)
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                year:
+                  type: string
+                  description: Filtrar por año académico (formato XX/XX)
+                  pattern: "^[0-9]{2}/[0-9]{2}$"
+                  example: "22/23"
+                degree:
+                  type: string
+                  description: Filtrar por titulación académica
+                  example: "Ingeniería Informática"
+                advisor:
+                  type: string
+                  description: Filtrar por tutor/asesor
+                  example: "Dr. Antonio García"
+                search:
+                  type: string
+                  description: Término de búsqueda general
+                  example: "inteligencia artificial"
+      responses:
+        "200":
+          description: Lista paginada de TFGs no verificados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tfgs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TFG"
+                  totalPages:
+                    type: integer
+                    example: 3
+                  currentPage:
+                    type: integer
+                    example: 1
+                  totalTFGs:
+                    type: integer
+                    example: 25
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  #
+  # AÑOS ACADÉMICOS
+  #
+  /years:
+    get:
+      summary: Obtener todos los años académicos
+      description: |
+        Recupera la lista de todos los años académicos registrados.
+        Puede filtrar para obtener solo los años activos.
+      operationId: getYears
+      tags:
+        - Años Académicos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active
+          in: query
+          description: Filtrar solo años activos
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        "200":
+          description: Lista de años académicos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Year"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: Crear un nuevo año académico
+      description: Registra un nuevo año académico en el sistema (solo administradores)
+      operationId: createYear
+      tags:
+        - Años Académicos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YearCreate"
       responses:
         "201":
           description: Año académico creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Year"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El año académico ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /years/{id}:
+    patch:
+      summary: Actualizar un año académico
+      description: Actualiza los datos de un año académico existente (solo administradores)
+      operationId: updateYear
+      tags:
+        - Años Académicos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del año académico a actualizar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YearUpdate"
+      responses:
+        "200":
+          description: Año académico actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Year"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Año académico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El año académico ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
     delete:
-      summary: Eliminar un año academico
+      summary: Eliminar un año académico
+      description: |
+        Elimina un año académico (solo administradores).
+        No se puede eliminar un año que esté siendo usado en algún TFG.
       operationId: deleteYear
       tags:
-        - years
+        - Años Académicos
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del año académico a eliminar
           schema:
             type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
       responses:
         "200":
-          description: Año eliminado correctamente
+          description: Año académico eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Year"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Año académico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El año académico está siendo usado en TFGs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
+  #
+  # GRADOS ACADÉMICOS
+  #
   /degrees:
     get:
-      summary: Obtener los cursos academicos
+      summary: Obtener todos los grados académicos
+      description: |
+        Recupera la lista de todos los grados académicos registrados.
+        Puede filtrar para obtener solo los grados activos.
       operationId: getDegrees
       tags:
-        - degrees
+        - Grados Académicos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active
+          in: query
+          description: Filtrar solo grados activos
+          required: false
+          schema:
+            type: boolean
+          example: true
       responses:
         "200":
-          description: Curso obtenidos correctamente
+          description: Lista de grados académicos
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Degrees"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Degree"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
     post:
-      summary: Crear un nuevo curso academico
+      summary: Crear un nuevo grado académico
+      description: Registra un nuevo grado académico en el sistema (solo administradores)
       operationId: createDegree
       tags:
-        - degrees
+        - Grados Académicos
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                degree:
-                  type: string
+              $ref: "#/components/schemas/DegreeCreate"
       responses:
         "201":
-          description: Curso académico creado correctamente
+          description: Grado académico creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Degree"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El grado académico ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /degrees/{id}:
+    patch:
+      summary: Actualizar un grado académico
+      description: Actualiza los datos de un grado académico existente (solo administradores)
+      operationId: updateDegree
+      tags:
+        - Grados Académicos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del grado académico a actualizar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DegreeUpdate"
+      responses:
+        "200":
+          description: Grado académico actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Degree"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Grado académico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El grado académico ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
     delete:
-      summary: Eliminar un curso academico
+      summary: Eliminar un grado académico
+      description: |
+        Elimina un grado académico (solo administradores).
+        No se puede eliminar un grado que esté siendo usado en algún TFG.
       operationId: deleteDegree
       tags:
-        - degrees
+        - Grados Académicos
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del grado académico a eliminar
           schema:
             type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
       responses:
         "200":
-          description: Curso eliminado correctamente
-  /advisors:
-    get:
-      summary: Obtener los tutores
-      operationId: getAdvisors
-      tags:
-        - advisors
-      responses:
-        "200":
-          description: Tutores obtenidos correctamente
+          description: Grado académico eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Advisors"
-    post:
-      summary: Crear un nuevo curso academico
-      operationId: createDegree
+                $ref: "#/components/schemas/Degree"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Grado académico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El grado académico está siendo usado en TFGs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  #
+  # TUTORES/ASESORES
+  #
+  /advisors:
+    get:
+      summary: Obtener todos los tutores/asesores
+      description: Recupera la lista de todos los tutores/asesores registrados
+      operationId: getAdvisors
       tags:
-        - advisors
+        - Tutores
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de tutores/asesores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Advisor"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: Crear un nuevo tutor/asesor
+      description: |
+        Registra un nuevo tutor/asesor en el sistema (requiere roles admin/coordinador).
+        El correo electrónico debe seguir el formato institucional (nombre.apellido@u-tad.com).
+      operationId: createAdvisor
+      tags:
+        - Tutores
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                advisor:
-                  type: string
+              $ref: "#/components/schemas/AdvisorCreate"
       responses:
         "201":
-          description: Tutor creado correctamente
+          description: Tutor/asesor creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Advisor"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El tutor/asesor ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /advisors/{id}:
-    delete:
-      summary: Eliminar un tutor
-      operationId: deleteAdvisor
+    patch:
+      summary: Actualizar un tutor/asesor
+      description: Actualiza los datos de un tutor/asesor existente (requiere roles admin/coordinador)
+      operationId: updateAdvisor
       tags:
-        - advisors
+        - Tutores
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del tutor/asesor a actualizar
           schema:
             type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvisorUpdate"
       responses:
         "200":
-          description: Tutor eliminado correctamente
+          description: Tutor/asesor actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Advisor"
+        "400":
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Tutor/asesor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El tutor/asesor ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Eliminar un tutor/asesor
+      description: |
+        Elimina un tutor/asesor (requiere roles admin/coordinador).
+        No se puede eliminar un tutor que esté siendo usado en algún TFG.
+      operationId: deleteAdvisor
+      tags:
+        - Tutores
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del tutor/asesor a eliminar
+          schema:
+            type: string
+            format: mongodb-id
+          example: "605476e291c9e8bc6043a4c7"
+      responses:
+        "200":
+          description: Tutor/asesor eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Advisor"
+        "403":
+          description: No tiene permisos para esta acción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Tutor/asesor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El tutor/asesor está siendo usado en TFGs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT token de autenticación. Formato: Bearer [token]"
+
   schemas:
-    TFG:
+    # Esquemas para Usuario
+    UserCreate:
       type: object
+      required:
+        - name
+        - email
+        - password
       properties:
-        id:
+        name:
           type: string
-        Año:
+          minLength: 3
+          maxLength: 100
+          description: Nombre completo del usuario
+          example: "Juan Pérez Rodríguez"
+        email:
           type: string
-        Titulación de Grado:
+          format: email
+          description: Correo electrónico institucional
+          example: "juan.perez@u-tad.com"
+        password:
           type: string
-        Alumno:
-          type: string
-        Título TFG:
-          type: string
-        Keywords:
-          type: array
-          items:
-            type: string
-        Link:
-          type: string
-        Tutor:
-          type: string
-        Abstract/Resumen:
-          type: string
-    TFGCreateAndUpdate:
-      type: object
-      properties:
-        Año:
-          type: string
-        Titulación de Grado:
-          type: string
-        Alumno:
-          type: string
-        Título TFG:
-          type: string
-        Keywords:
-          type: array
-          items:
-            type: string
-        Tutor:
-          type: string
-        Abstract/Resumen:
-          type: string
-    User:
+          format: password
+          minLength: 8
+          maxLength: 16
+          description: Contraseña (entre 8 y 16 caracteres)
+          example: "Password123"
+
+    UserUpdate:
       type: object
       properties:
         name:
           type: string
+          minLength: 3
+          maxLength: 100
+          description: Nombre completo del usuario
+          example: "Juan Pérez Rodríguez"
         email:
           type: string
+          format: email
+          description: Correo electrónico institucional
+          example: "juan.perez@u-tad.com"
         password:
           type: string
-    Years:
+          format: password
+          minLength: 8
+          maxLength: 16
+          description: Nueva contraseña (entre 8 y 16 caracteres)
+          example: "NewPassword456"
+        role:
+          type: string
+          enum: ["administrador", "coordinador", "usuario"]
+          description: Rol del usuario (solo administradores pueden cambiar roles)
+          example: "coordinador"
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: mongodb-id
+          description: Identificador único del usuario
+          example: "605476e291c9e8bc6043a4c7"
+        name:
+          type: string
+          description: Nombre completo del usuario
+          example: "Juan Pérez Rodríguez"
+        email:
+          type: string
+          format: email
+          description: Correo electrónico institucional
+          example: "juan.perez@u-tad.com"
+        role:
+          type: string
+          enum: ["administrador", "coordinador", "usuario"]
+          description: Rol del usuario
+          example: "usuario"
+        validated:
+          type: boolean
+          description: Indica si el correo electrónico ha sido validado
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del usuario
+          example: "2023-05-10T15:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización del usuario
+          example: "2023-05-15T09:20:30Z"
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token de autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: "#/components/schemas/User"
+
+    # Esquemas para TFG
+    TFGCreate:
+      type: object
+      required:
+        - year
+        - degree
+        - student
+        - tfgTitle
+        - keywords
+        - advisor
+        - abstract
+      properties:
+        year:
+          type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        degree:
+          type: string
+          description: Titulación académica
+          example: "Ingeniería Informática"
+        student:
+          type: string
+          description: Nombre completo del estudiante
+          example: "María Sánchez García"
+        tfgTitle:
+          type: string
+          minLength: 10
+          maxLength: 255
+          description: Título del Trabajo Fin de Grado
+          example: "Desarrollo de un sistema de reconocimiento facial basado en redes neuronales"
+        keywords:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Palabras clave relacionadas con el TFG
+          example:
+            [
+              "IA",
+              "reconocimiento facial",
+              "redes neuronales",
+              "visión por computador",
+            ]
+        advisor:
+          type: string
+          description: Nombre del tutor/asesor
+          example: "Dr. Antonio García López"
+        abstract:
+          type: string
+          minLength: 50
+          description: Resumen del contenido del TFG
+          example: "Este trabajo presenta el desarrollo de un sistema de reconocimiento facial utilizando técnicas de aprendizaje profundo..."
+
+    TFGUpdate:
+      $ref: "#/components/schemas/TFGCreate"
+
+    TFGPartialUpdate:
       type: object
       properties:
         year:
           type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        degree:
+          type: string
+          description: Titulación académica
+          example: "Ingeniería Informática"
+        student:
+          type: string
+          description: Nombre completo del estudiante
+          example: "María Sánchez García"
+        tfgTitle:
+          type: string
+          minLength: 10
+          maxLength: 255
+          description: Título del Trabajo Fin de Grado
+          example: "Desarrollo de un sistema de reconocimiento facial basado en redes neuronales"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Palabras clave relacionadas con el TFG
+          example:
+            [
+              "IA",
+              "reconocimiento facial",
+              "redes neuronales",
+              "visión por computador",
+            ]
+        advisor:
+          type: string
+          description: Nombre del tutor/asesor
+          example: "Dr. Antonio García López"
+        abstract:
+          type: string
+          minLength: 50
+          description: Resumen del contenido del TFG
+          example: "Este trabajo presenta el desarrollo de un sistema de reconocimiento facial utilizando técnicas de aprendizaje profundo..."
+
+    TFG:
+      type: object
+      properties:
         _id:
           type: string
-    Degrees:
+          format: mongodb-id
+          description: Identificador único del TFG
+          example: "605476e291c9e8bc6043a4c7"
+        year:
+          type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        degree:
+          type: string
+          description: Titulación académica
+          example: "Ingeniería Informática"
+        student:
+          type: string
+          description: Nombre completo del estudiante
+          example: "María Sánchez García"
+        tfgTitle:
+          type: string
+          description: Título del Trabajo Fin de Grado
+          example: "Desarrollo de un sistema de reconocimiento facial basado en redes neuronales"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Palabras clave relacionadas con el TFG
+          example:
+            [
+              "IA",
+              "reconocimiento facial",
+              "redes neuronales",
+              "visión por computador",
+            ]
+        link:
+          type: string
+          format: uri
+          description: URL del archivo PDF
+          example: "https://ejemplo.com/ipfs/QmT5NvUtoM5nWFfrQdVrFtvGfKFmG7AHE8P34isapyhCxX"
+        advisor:
+          type: string
+          description: Nombre del tutor/asesor
+          example: "Dr. Antonio García López"
+        abstract:
+          type: string
+          description: Resumen del contenido del TFG
+          example: "Este trabajo presenta el desarrollo de un sistema de reconocimiento facial utilizando técnicas de aprendizaje profundo..."
+        verified:
+          type: boolean
+          description: Indica si el TFG ha sido verificado
+          example: true
+        verifiedBy:
+          type: string
+          format: mongodb-id
+          description: ID del usuario que verificó el TFG
+          example: "605476e291c9e8bc6043a4c8"
+        reason:
+          type: string
+          description: Motivo de la verificación o rechazo
+          example: "El TFG cumple con todos los requisitos académicos"
+        views:
+          type: integer
+          description: Contador de visualizaciones
+          example: 45
+        downloadCount:
+          type: integer
+          description: Contador de descargas
+          example: 12
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: "2023-05-10T15:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2023-05-15T09:20:30Z"
+        fullUrl:
+          type: string
+          format: uri
+          description: URL completa para acceder al archivo
+          example: "https://api.ejemplo.com/api/tfgs/pdf/605476e291c9e8bc6043a4c7"
+
+    # Esquemas para Año Académico
+    YearCreate:
+      type: object
+      required:
+        - year
+      properties:
+        year:
+          type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio del año académico
+          example: "2022-09-01"
+        endDate:
+          type: string
+          format: date
+          description: Fecha de fin del año académico
+          example: "2023-07-31"
+        active:
+          type: boolean
+          description: Indica si el año académico está activo
+          example: true
+
+    YearUpdate:
+      type: object
+      properties:
+        year:
+          type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio del año académico
+          example: "2022-09-01"
+        endDate:
+          type: string
+          format: date
+          description: Fecha de fin del año académico
+          example: "2023-07-31"
+        active:
+          type: boolean
+          description: Indica si el año académico está activo
+          example: true
+
+    Year:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: mongodb-id
+          description: Identificador único del año académico
+          example: "605476e291c9e8bc6043a4c7"
+        year:
+          type: string
+          pattern: "^[0-9]{2}/[0-9]{2}$"
+          description: Año académico en formato XX/XX
+          example: "22/23"
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio del año académico
+          example: "2022-09-01"
+        endDate:
+          type: string
+          format: date
+          description: Fecha de fin del año académico
+          example: "2023-07-31"
+        active:
+          type: boolean
+          description: Indica si el año académico está activo
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: "2022-06-10T12:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2022-06-10T12:30:45Z"
+
+    # Esquemas para Grado Académico
+    DegreeCreate:
+      type: object
+      required:
+        - degree
+      properties:
+        degree:
+          type: string
+          description: Nombre del grado académico
+          example: "Ingeniería Informática"
+        abbreviation:
+          type: string
+          description: Abreviatura del grado
+          example: "II"
+        faculty:
+          type: string
+          description: Facultad a la que pertenece el grado
+          example: "Facultad de Ingeniería"
+        active:
+          type: boolean
+          description: Indica si el grado está activo
+          example: true
+
+    DegreeUpdate:
       type: object
       properties:
         degree:
           type: string
+          description: Nombre del grado académico
+          example: "Ingeniería Informática"
+        abbreviation:
+          type: string
+          description: Abreviatura del grado
+          example: "II"
+        faculty:
+          type: string
+          description: Facultad a la que pertenece el grado
+          example: "Facultad de Ingeniería"
+        active:
+          type: boolean
+          description: Indica si el grado está activo
+          example: true
+
+    Degree:
+      type: object
+      properties:
         _id:
           type: string
-    Advisors:
+          format: mongodb-id
+          description: Identificador único del grado académico
+          example: "605476e291c9e8bc6043a4c7"
+        degree:
+          type: string
+          description: Nombre del grado académico
+          example: "Ingeniería Informática"
+        abbreviation:
+          type: string
+          description: Abreviatura del grado
+          example: "II"
+        faculty:
+          type: string
+          description: Facultad a la que pertenece el grado
+          example: "Facultad de Ingeniería"
+        active:
+          type: boolean
+          description: Indica si el grado está activo
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del registro
+          example: "2022-06-10T12:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2022-06-10T12:30:45Z"
+
+    # Esquemas para Tutor/Asesor
+    AdvisorCreate:
+      type: object
+      required:
+        - advisor
+      properties:
+        advisor:
+          type: string
+          description: Nombre completo del tutor/asesor
+          example: "Dr. Antonio García López"
+        email:
+          type: string
+          format: email
+          description: Correo electrónico institucional
+          example: "antonio.garcia@u-tad.com"
+        department:
+          type: string
+          description: Departamento al que pertenece
+          example: "Departamento de Informática"
+        specialties:
+          type: array
+          items:
+            type: string
+          description: Áreas de especialización
+          example:
+            ["Inteligencia Artificial", "Procesamiento de Lenguaje Natural"]
+        active:
+          type: boolean
+          description: Indica si el tutor está activo
+          example: true
+
+    AdvisorUpdate:
       type: object
       properties:
         advisor:
           type: string
+          description: Nombre completo del tutor/asesor
+          example: "Dr. Antonio García López"
+        email:
+          type: string
+          format: email
+          description: Correo electrónico institucional
+          example: "antonio.garcia@u-tad.com"
+        department:
+          type: string
+          description: Departamento al que pertenece
+          example: "Departamento de Informática"
+        specialties:
+          type: array
+          items:
+            type: string
+          description: Áreas de especialización
+          example:
+            ["Inteligencia Artificial", "Procesamiento de Lenguaje Natural"]
+        active:
+          type: boolean
+          description: Indica si el tutor está activo
+          example: true
+
+    Advisor:
+      type: object
+      properties:
         _id:
           type: string
+          format: mongodb-id
+          description: Identificador único del tutor/asesor
+          example: "605476e291c9e8bc6043a4c7"
+        advisor:
+          type: string
+          description: Nombre completo del tutor/asesor
+          example: "Dr. Antonio García López"
+        email:
+          type: string
+          format: email
+          description: Correo electrónico institucional
+          example: "antonio.garcia@u-tad.com"
+        department:
+          type: string
+          description: Departamento al que pertenece
+          example: "Departamento de Informática"
+        specialties:
+          type: array
+          items:
+            type: string
+          description: Áreas de especialización
+          example:
+            ["Inteligencia Artificial", "Procesamiento de Lenguaje Natural"]
+        active:
+          type: boolean
+          description: Indica si el tutor está activo
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+            Registrar un nuevo usuario
+      description: Crea una nueva cuenta de usuario en el sistema
