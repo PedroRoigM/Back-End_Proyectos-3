@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2UxMmQwODJkY2U0Y2ZhOGJiZjhlYjkiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDI4MTAzNzYsImV4cCI6MTc0NDAxOTk3Nn0.9P4IVFKN0p4CuMNcAeMBh0jJUCekf8Ex_byt6hj3PB4
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2UxMzRiYjhkZDNiYTc4ODQxZTliMzgiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDI4ODU3MjMsImV4cCI6MTc0NDA5NTMyM30.fimD7CVtbcvN4pQMmxIW5RMft-d2TH7E3Aau3DDB_U4
 
 GET https://api-937n.onrender.com/api/users
 
@@ -43,7 +43,7 @@ Content-Type: application/json
 
 {
     "email": "pedro.roig@live.u-tad.com",
-    "password": "123456789"
+    "password": ""
 }
 
 ###
@@ -217,7 +217,7 @@ GET http://localhost:3000/api/tfgs/pages/1
 Authorization: {{authToken}}
 
 ###
-GET http://localhost:3000/api/tfgs/67de9e8948077b58c88915b4
+GET http://localhost:3000/api/tfgs/67cc54842d5bc7cc918833d7
 Authorization: {{authToken}}
 
 ###

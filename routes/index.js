@@ -31,8 +31,6 @@ fs.readdirSync(__dirname)
 
         // Registrar ruta con el prefijo correspondiente al nombre del archivo
         router.use(`/${routeName}`, require(routePath));
-
-        console.log(`Ruta cargada: /${routeName}`);
     });
 
 module.exports = router;

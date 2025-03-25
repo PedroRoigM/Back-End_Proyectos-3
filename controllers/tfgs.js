@@ -49,13 +49,12 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params;
-
+        var verified = false;
         // Solo mostrar TFGs verificados a usuarios normales
-        if (req.user.role === 'usuario') {
+        if (["administrador", "coordinador"].includes(req.user.role)) {
             const verified = true;
-        } else {
-            const verified = false;
         }
+
         const tfg = await tfgService.getTFGById(id, verified);
 
         // Incrementa contador de visualizaciones
