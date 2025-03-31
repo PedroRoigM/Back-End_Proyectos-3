@@ -78,11 +78,6 @@ const getNextTFGS = async (req, res) => {
         const { page_number } = req.params;
         const filters = { ...req.query, ...req.body };
 
-        // Solo mostrar TFGs verificados a usuarios normales
-        if (['administrador', 'coordinador'].includes(req.user.role)) {
-            filters.verified = true;
-        }
-
         const result = await tfgService.getPaginatedTFGs(filters, parseInt(page_number));
         createResponse(res, 200, result);
     } catch (error) {
@@ -214,13 +209,8 @@ const patchFileTFG = async (req, res) => {
 const patchVerifiedTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        const { verified, reason } = req.body;
 
-        const updatedTFG = await tfgService.verifyTFG(id, {
-            verified,
-            reason,
-            verifiedBy: req.user._id
-        });
+        const updatedTFG = await tfgService.verifyTFG(id);
 
         createResponse(res, 200, updatedTFG);
     } catch (error) {

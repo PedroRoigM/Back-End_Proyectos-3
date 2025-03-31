@@ -63,7 +63,7 @@ router.put('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, valid
 // Modificaciones parciales
 router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validatePatchTFG, putTFG);
 router.patch('/pdf/:id', authMiddleware, validateIdMongo, upload.single("file"), patchFileTFG);
-router.patch('/verify/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateVerify, patchVerifiedTFG);
+router.patch('/verify/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, patchVerifiedTFG);
 
 /**
  * Rutas de eliminación

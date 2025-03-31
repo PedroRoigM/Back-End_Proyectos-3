@@ -837,10 +837,10 @@ paths:
 
   /tfgs/verify/{id}:
     patch:
-      summary: Verificar o rechazar un TFG
+      summary: Verificar
       description: |
         Cambia el estado de verificación de un TFG (requiere roles admin/coordinador).
-        Permite aprobar o rechazar un TFG para su publicación, incluyendo un motivo.
+        Permite aprobar un TFG para su publicación.
       operationId: verifyTFG
       tags:
         - TFGs
@@ -855,25 +855,6 @@ paths:
             type: string
             format: mongodb-id
           example: "605476e291c9e8bc6043a4c7"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - verified
-                - reason
-              properties:
-                verified:
-                  type: boolean
-                  description: Estado de verificación (true=aprobado, false=rechazado)
-                  example: true
-                reason:
-                  type: string
-                  description: Motivo de la verificación o rechazo
-                  minLength: 10
-                  example: "El TFG cumple con todos los requisitos académicos y formales."
       responses:
         "200":
           description: Estado de verificación actualizado correctamente

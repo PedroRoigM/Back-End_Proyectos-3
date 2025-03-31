@@ -150,31 +150,11 @@ const validateSearcher = [
     (req, res, next) => validateResults(req, res, next)
 ];
 
-const validateVerify = [
-    check("verified", "El campo 'verified' es obligatorio").not().isEmpty()
-        .isBoolean().withMessage("El campo 'verified' debe ser un valor booleano."),
-    check("reason", "El campo 'reason' es obligatorio").not().isEmpty()
-        .isString().withMessage("El campo 'reason' debe ser una cadena de texto")
-        .isLength({ min: 10 }).withMessage("La razón debe tener al menos 10 caracteres"),
-
-    // Filtrar los campos no deseados, eliminando cualquier otro campo de `req.body`
-    (req, res, next) => {
-        const allowedFields = ['verified', "reason"];
-        Object.keys(req.body).forEach(key => {
-            if (!allowedFields.includes(key)) {
-                delete req.body[key]; // Eliminar los campos que no estén en la lista
-            }
-        });
-        next();
-    },
-    (req, res, next) => validateResults(req, res, next)
-];
 
 module.exports = {
     validateIdMongo,
     validateCreateTFG,
     validatePutTFG,
     validatePatchTFG,
-    validateSearcher,
-    validateVerify
+    validateSearcher
 };

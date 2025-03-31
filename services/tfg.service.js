@@ -70,7 +70,6 @@ const getPaginatedTFGs = async (filters = {}, page = 1, pageSize = 10) => {
     if (filters.year) query.year = filters.year;
     if (filters.degree) query.degree = filters.degree;
     if (filters.advisor) query.advisor = filters.advisor;
-    if (filters.verified !== undefined) query.verified = filters.verified;
 
     // Filtro de búsqueda
     if (filters.search) {
@@ -169,17 +168,14 @@ const updateTFGFile = async (id, fileUrl) => {
  * Verifica un TFG
  * @async
  * @param {string} id - ID del TFG
- * @param {Object} verificationData - Datos de verificación
  * @returns {Promise<Object>} TFG actualizado
  */
-const verifyTFG = async (id, verificationData) => {
+const verifyTFG = async (id) => {
     return await tfgsModel.findByIdAndUpdate(
         id,
         {
             $set: {
-                verified: verificationData.verified,
-                verifiedBy: verificationData.verifiedBy,
-                reason: verificationData.reason
+                verified: true
             }
         },
         { new: true }
