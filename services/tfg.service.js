@@ -70,7 +70,7 @@ const getPaginatedTFGs = async (filters = {}, page = 1, pageSize = 10) => {
     if (filters.year) query.year = filters.year;
     if (filters.degree) query.degree = filters.degree;
     if (filters.advisor) query.advisor = filters.advisor;
-
+    if (filters.verified !== undefined) query.verified = filters.verified;
     // Filtro de búsqueda
     if (filters.search) {
         const searchRegex = { $regex: filters.search, $options: "i" };
