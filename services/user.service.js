@@ -5,6 +5,7 @@
 const { usersModel } = require('../models');
 const { encrypt, compare } = require('../utils/handlePassword');
 const { tokenSign } = require('../utils/handleJwt');
+const logger = require('../utils/logger');
 
 /**
  * Obtiene todos los usuarios
@@ -12,11 +13,16 @@ const { tokenSign } = require('../utils/handleJwt');
  * @returns {Promise<Array>} Lista de usuarios
  */
 const getAllUsers = async () => {
-    return await usersModel.find({}, {
-        password: 0,
-        code: 0,
-        attempts: 0
-    });
+    try {
+        return await usersModel.find({}, {
+            password: 0,
+            code: 0,
+            attempts: 0
+        });
+    } catch (error) {
+        logger.error('Error obteniendo todos los usuarios', { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -27,17 +33,30 @@ const getAllUsers = async () => {
  * @throws {Error} Si el usuario no existe
  */
 const getUserById = async (id) => {
-    const user = await usersModel.findById(id);
+    try {
+        const user = await usersModel.findById(id);
 
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
+
+        return user.getSafeData ? user.getSafeData() : user;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'USER_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de usuario inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error obteniendo usuario por ID: ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    return user.safeData; // Usando el virtual para datos seguros
 };
-
 
 /**
  * Obtiene un usuario por su email
@@ -47,8 +66,13 @@ const getUserById = async (id) => {
  * @returns {Promise<Object|null>} Usuario encontrado o null
  */
 const getUserByEmail = async (email, includePassword = false) => {
-    const fields = includePassword ? '+password' : '';
-    return await usersModel.findOne({ email }).select(fields);
+    try {
+        const fields = includePassword ? '+password' : '';
+        return await usersModel.findOne({ email }).select(fields);
+    } catch (error) {
+        logger.error(`Error obteniendo usuario por email: ${email}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -59,42 +83,61 @@ const getUserByEmail = async (email, includePassword = false) => {
  * @throws {Error} Si el email ya existe
  */
 const registerUser = async (userData) => {
-    // Verificar que el email no exista
-    const userWithEmail = await getUserByEmail(userData.email);
-    if (userWithEmail) {
-        const error = new Error('EMAIL_ALREADY_EXISTS');
-        error.status = 400;
-        throw error;
+    try {
+        // Verificar que el email no exista
+        const userWithEmail = await getUserByEmail(userData.email);
+        if (userWithEmail) {
+            throw new Error('EMAIL_ALREADY_EXISTS');
+        }
+
+        // Encriptar contraseña
+        const hashedPassword = await encrypt(userData.password);
+        const newUserData = {
+            ...userData,
+            password: hashedPassword,
+            validated: false
+        };
+
+        // Crear usuario
+        const user = await usersModel.create(newUserData);
+
+        // Generar código de validación
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        await usersModel.findByIdAndUpdate(user._id, { code }, { new: true });
+
+        // Preparar respuesta
+        const userResponse = user.toObject();
+        delete userResponse.password;
+        delete userResponse.code;
+
+        // Generar token
+        const token = await tokenSign(userResponse);
+
+        return {
+            user: userResponse,
+            token,
+            verificationCode: code
+        };
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'EMAIL_ALREADY_EXISTS') {
+            throw error;
+        }
+
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error('Error de validación al registrar usuario', { error, validationError, userData });
+            throw validationError;
+        }
+
+        logger.error('Error registrando usuario', { error, userData });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    // Encriptar contraseña
-    const hashedPassword = await encrypt(userData.password);
-    const newUserData = {
-        ...userData,
-        password: hashedPassword,
-        validated: false
-    };
-
-    // Crear usuario
-    const user = await usersModel.create(newUserData);
-
-    // Generar código de validación
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    await usersModel.findByIdAndUpdate(user._id, { code }, { new: true });
-
-    // Preparar respuesta
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    delete userResponse.code;
-
-    // Generar token
-    const token = await tokenSign(userResponse);
-
-    return {
-        user: userResponse,
-        token,
-        verificationCode: code
-    };
 };
 
 /**
@@ -106,37 +149,49 @@ const registerUser = async (userData) => {
  * @throws {Error} Si credenciales inválidas o cuenta no validada
  */
 const loginUser = async (email, password) => {
-    // Buscar usuario con todos los campos
-    const user = await usersModel.findOne({ email }).select('+password');
+    try {
+        // Buscar usuario con todos los campos
+        const user = await usersModel.findOne({ email }).select('+password');
 
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
+
+        // Verificar si la cuenta está bloqueada
+        if (user.isLocked && user.isLocked()) {
+            throw new Error('ACCOUNT_LOCKED');
+        }
+
+        // Verificar contraseña
+        const isValid = await user.comparePassword(password);
+
+        if (!isValid) {
+            // Incrementar intentos fallidos
+            await usersModel.findByIdAndUpdate(user._id, { $inc: { attempts: 1 } });
+            throw new Error('INVALID_PASSWORD');
+        }
+
+        // Resetear contador de intentos
+        await usersModel.findByIdAndUpdate(user._id, { attempts: 0 });
+
+        // Eliminar campos sensibles
+        const userResponse = user.toObject();
+        delete userResponse.password;
+        delete userResponse.code;
+
+        // Generar token
+        const token = await tokenSign(userResponse);
+
+        return { user: userResponse, token };
+    } catch (error) {
+        // Preservar errores específicos
+        if (['USER_NOT_EXISTS', 'INVALID_PASSWORD', 'ACCOUNT_LOCKED'].includes(error.message)) {
+            throw error;
+        }
+
+        logger.error(`Error en login de usuario: ${email}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-    // Verificar contraseña
-    const isValid = await user.comparePassword(password);
-
-
-    if (!isValid) {
-        const error = new Error('INVALID_PASSWORD');
-        error.status = 401;
-        throw error;
-    }
-
-
-    // Resetear contador de intentos
-    await usersModel.findByIdAndUpdate(user._id, { attempts: 0 });
-
-    // Eliminar campos sensibles
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    delete userResponse.code;
-
-    // Generar token
-    const token = await tokenSign(userResponse);
-
-    return { user: userResponse, token };
 };
 
 /**
@@ -147,23 +202,55 @@ const loginUser = async (email, password) => {
  * @returns {Promise<Object>} Usuario actualizado
  */
 const updateUser = async (id, updateData) => {
-    // Si viene contraseña, encriptarla
-    if (updateData.password) {
-        updateData.password = await encrypt(updateData.password);
+    try {
+        // Si viene contraseña, encriptarla
+        if (updateData.password) {
+            updateData.password = await encrypt(updateData.password);
+        }
+
+        const user = await usersModel.findByIdAndUpdate(id, updateData, {
+            new: true,
+            select: '-password -code -attempts',
+            runValidators: true
+        });
+
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
+
+        return user;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'USER_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error(`Error de validación al actualizar usuario ${id}`, { error, validationError, updateData });
+            throw validationError;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de usuario inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error(`Email duplicado al actualizar usuario ${id}`, { error, updateData });
+            throw new Error('EMAIL_ALREADY_EXISTS');
+        }
+
+        logger.error(`Error actualizando usuario ${id}`, { error, updateData });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    const user = await usersModel.findByIdAndUpdate(id, updateData, {
-        new: true,
-        select: '-password -code -attempts'
-    });
-
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
-    }
-
-    return user;
 };
 
 /**
@@ -173,15 +260,29 @@ const updateUser = async (id, updateData) => {
  * @returns {Promise<Object>} Resultado de la eliminación
  */
 const deleteUser = async (id) => {
-    const result = await usersModel.delete({ _id: id });
+    try {
+        const result = await usersModel.delete({ _id: id });
 
-    if (!result.deletedCount) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
+        if (!result.deletedCount) {
+            throw new Error('USER_NOT_EXISTS');
+        }
+
+        return { success: true, message: 'Usuario eliminado correctamente' };
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'USER_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de usuario inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error eliminando usuario ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    return { success: true, message: 'Usuario eliminado correctamente' };
 };
 
 /**
@@ -193,40 +294,49 @@ const deleteUser = async (id) => {
  * @throws {Error} Si código inválido o intentos excedidos
  */
 const validateUserAccount = async (userId, code) => {
-    const user = await usersModel.findById(userId);
+    try {
+        const user = await usersModel.findById(userId);
 
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
-    }
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
 
-    if (code !== user.code) {
-        // Incrementar intentos
-        user.attempts += 1;
+        if (code !== user.code) {
+            // Incrementar intentos
+            user.attempts += 1;
 
-        if (user.attempts >= 3) {
-            await usersModel.findByIdAndUpdate(userId, { code: null });
-            const error = new Error('MAX_ATTEMPTS');
-            error.status = 401;
+            if (user.attempts >= 3) {
+                await usersModel.findByIdAndUpdate(userId, { code: null });
+                throw new Error('MAX_ATTEMPTS');
+            }
+
+            await usersModel.findByIdAndUpdate(userId, { attempts: user.attempts });
+            throw new Error('INVALID_CODE');
+        }
+
+        // Validar usuario
+        await usersModel.findByIdAndUpdate(userId, {
+            validated: true,
+            attempts: 0,
+            code: null
+        });
+
+        return true;
+    } catch (error) {
+        // Preservar errores específicos
+        if (['USER_NOT_EXISTS', 'INVALID_CODE', 'MAX_ATTEMPTS'].includes(error.message)) {
             throw error;
         }
 
-        await usersModel.findByIdAndUpdate(userId, { attempts: user.attempts });
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de usuario inválido: ${userId}`, { error });
+            throw new Error('INVALID_ID');
+        }
 
-        const error = new Error('INVALID_CODE');
-        error.status = 401;
-        throw error;
+        logger.error(`Error validando cuenta de usuario ${userId}`, { error, code });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    // Validar usuario
-    await usersModel.findByIdAndUpdate(userId, {
-        validated: true,
-        attempts: 0,
-        code: null
-    });
-
-    return true;
 };
 
 /**
@@ -237,24 +347,32 @@ const validateUserAccount = async (userId, code) => {
  * @throws {Error} Si usuario no existe
  */
 const requestPasswordRecovery = async (email) => {
-    const user = await usersModel.findOne({ email });
+    try {
+        const user = await usersModel.findOne({ email });
 
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
+
+        // Generar código
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Guardar código y resetear intentos
+        await usersModel.findByIdAndUpdate(user._id, {
+            code,
+            attempts: 0
+        });
+
+        return code;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'USER_NOT_EXISTS') {
+            throw error;
+        }
+
+        logger.error(`Error solicitando recuperación de contraseña para ${email}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    // Generar código
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Guardar código y resetear intentos
-    await usersModel.findByIdAndUpdate(user._id, {
-        code,
-        attempts: 0
-    });
-
-    return code;
 };
 
 /**
@@ -267,52 +385,53 @@ const requestPasswordRecovery = async (email) => {
  * @throws {Error} Si código inválido, intentos excedidos o misma contraseña
  */
 const recoverPassword = async (email, code, newPassword) => {
-    const user = await usersModel.findOne({ email }).select('+password');
+    try {
+        const user = await usersModel.findOne({ email }).select('+password');
 
-    if (!user) {
-        const error = new Error('USER_NOT_EXISTS');
-        error.status = 404;
-        throw error;
-    }
+        if (!user) {
+            throw new Error('USER_NOT_EXISTS');
+        }
 
-    if (user.code !== code) {
-        // Incrementar intentos
-        user.attempts += 1;
+        if (user.code !== code) {
+            // Incrementar intentos
+            user.attempts += 1;
 
-        if (user.attempts >= 3) {
-            await usersModel.findByIdAndUpdate(user._id, { code: null });
-            const error = new Error('MAX_ATTEMPTS');
-            error.status = 401;
+            if (user.attempts >= 3) {
+                await usersModel.findByIdAndUpdate(user._id, { code: null });
+                throw new Error('MAX_ATTEMPTS');
+            }
+
+            await usersModel.findByIdAndUpdate(user._id, { attempts: user.attempts });
+            throw new Error('INVALID_CODE');
+        }
+
+        // Verificar que la nueva contraseña no sea igual a la anterior
+        const isSamePassword = await compare(newPassword, user.password);
+
+        if (isSamePassword) {
+            throw new Error('SAME_PASSWORD');
+        }
+
+        // Encriptar nueva contraseña
+        const hashedPassword = await encrypt(newPassword);
+
+        // Actualizar contraseña, resetear intentos y código
+        await usersModel.findByIdAndUpdate(user._id, {
+            password: hashedPassword,
+            attempts: 0,
+            code: null
+        });
+
+        return true;
+    } catch (error) {
+        // Preservar errores específicos
+        if (['USER_NOT_EXISTS', 'INVALID_CODE', 'MAX_ATTEMPTS', 'SAME_PASSWORD'].includes(error.message)) {
             throw error;
         }
 
-        await usersModel.findByIdAndUpdate(user._id, { attempts: user.attempts });
-
-        const error = new Error('INVALID_CODE');
-        error.status = 401;
-        throw error;
+        logger.error(`Error recuperando contraseña para ${email}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    // Verificar que la nueva contraseña no sea igual a la anterior
-    const isSamePassword = await compare(newPassword, user.password);
-
-    if (isSamePassword) {
-        const error = new Error('SAME_PASSWORD');
-        error.status = 400;
-        throw error;
-    }
-
-    // Encriptar nueva contraseña
-    const hashedPassword = await encrypt(newPassword);
-
-    // Actualizar contraseña, resetear intentos y código
-    await usersModel.findByIdAndUpdate(user._id, {
-        password: hashedPassword,
-        attempts: 0,
-        code: null
-    });
-
-    return true;
 };
 
 module.exports = {

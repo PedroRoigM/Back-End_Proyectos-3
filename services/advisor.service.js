@@ -3,6 +3,7 @@
  * @module services/advisor.service
  */
 const { advisorsModel, tfgsModel } = require('../models');
+const logger = require('../utils/logger');
 
 /**
  * Obtiene todos los tutores/asesores
@@ -10,7 +11,12 @@ const { advisorsModel, tfgsModel } = require('../models');
  * @returns {Promise<Array>} Lista de tutores
  */
 const getAllAdvisors = async () => {
-    return await advisorsModel.find().select("_id advisor email department specialties active");
+    try {
+        return await advisorsModel.find().select("_id advisor email department specialties active");
+    } catch (error) {
+        logger.error('Error obteniendo todos los tutores', { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -20,9 +26,14 @@ const getAllAdvisors = async () => {
  * @returns {Promise<Object|null>} Tutor encontrado o null
  */
 const findAdvisorByName = async (name) => {
-    return await advisorsModel.findOne({
-        advisor: { $regex: new RegExp('^' + name + '$', 'i') }
-    });
+    try {
+        return await advisorsModel.findOne({
+            advisor: { $regex: new RegExp('^' + name + '$', 'i') }
+        });
+    } catch (error) {
+        logger.error(`Error buscando tutor por nombre: ${name}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -32,7 +43,29 @@ const findAdvisorByName = async (name) => {
  * @returns {Promise<Object|null>} Tutor encontrado o null
  */
 const getAdvisorById = async (id) => {
-    return await advisorsModel.findById(id);
+    try {
+        const advisor = await advisorsModel.findById(id);
+
+        if (!advisor) {
+            throw new Error('ADVISOR_NOT_FOUND');
+        }
+
+        return advisor;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'ADVISOR_NOT_FOUND') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de tutor inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error obteniendo tutor por ID: ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -42,7 +75,29 @@ const getAdvisorById = async (id) => {
  * @returns {Promise<Object>} Tutor creado
  */
 const createAdvisor = async (advisorData) => {
-    return await advisorsModel.create(advisorData);
+    try {
+        return await advisorsModel.create(advisorData);
+    } catch (error) {
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error('Error de validación al crear tutor', { error, validationError });
+            throw validationError;
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error('Tutor duplicado', { error, advisorData });
+            throw new Error('ADVISOR_ALREADY_EXISTS');
+        }
+
+        logger.error('Error creando tutor', { error, advisorData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -53,11 +108,50 @@ const createAdvisor = async (advisorData) => {
  * @returns {Promise<Object|null>} Tutor actualizado o null si no existe
  */
 const updateAdvisor = async (id, updateData) => {
-    return await advisorsModel.findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true }
-    );
+    try {
+        const advisor = await advisorsModel.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!advisor) {
+            throw new Error('ADVISOR_NOT_FOUND');
+        }
+
+        return advisor;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'ADVISOR_NOT_FOUND') {
+            throw error;
+        }
+
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error(`Error de validación al actualizar tutor ${id}`, { error, validationError, updateData });
+            throw validationError;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de tutor inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error(`Tutor duplicado al actualizar ${id}`, { error, updateData });
+            throw new Error('ADVISOR_ALREADY_EXISTS');
+        }
+
+        logger.error(`Error actualizando tutor ${id}`, { error, updateData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -67,11 +161,24 @@ const updateAdvisor = async (id, updateData) => {
  * @returns {Promise<boolean>} true si está en uso, false en caso contrario
  */
 const isAdvisorUsedInTFGs = async (advisorId) => {
-    const advisor = await advisorsModel.findById(advisorId);
-    if (!advisor) return false;
+    try {
+        const advisor = await advisorsModel.findById(advisorId);
+        if (!advisor) {
+            return false;
+        }
 
-    const tfgsCount = await tfgsModel.countDocuments({ advisor: advisor.advisor });
-    return tfgsCount > 0;
+        const tfgsCount = await tfgsModel.countDocuments({ advisor: advisor.advisor });
+        return tfgsCount > 0;
+    } catch (error) {
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de tutor inválido: ${advisorId}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error verificando uso de tutor ${advisorId} en TFGs`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -81,7 +188,29 @@ const isAdvisorUsedInTFGs = async (advisorId) => {
  * @returns {Promise<Object>} Tutor eliminado
  */
 const deleteAdvisor = async (id) => {
-    return await advisorsModel.findByIdAndDelete(id);
+    try {
+        const advisor = await advisorsModel.findByIdAndDelete(id);
+
+        if (!advisor) {
+            throw new Error('ADVISOR_NOT_FOUND');
+        }
+
+        return advisor;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'ADVISOR_NOT_FOUND') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de tutor inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error eliminando tutor ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 module.exports = {

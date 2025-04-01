@@ -3,6 +3,7 @@
  * @module services/tfg.service
  */
 const { tfgsModel, yearsModel, degreesModel } = require('../models');
+const logger = require('../utils/logger');
 
 /**
  * Obtiene lista resumida de nombres de TFGs
@@ -10,7 +11,12 @@ const { tfgsModel, yearsModel, degreesModel } = require('../models');
  * @returns {Promise<Array>} Lista con IDs y títulos de TFGs
  */
 const getTFGNames = async () => {
-    return await tfgsModel.find({ verified: true }).select("_id tfgTitle");
+    try {
+        return await tfgsModel.find({ verified: true }).select("_id tfgTitle");
+    } catch (error) {
+        logger.error('Error obteniendo nombres de TFGs', { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -20,39 +26,57 @@ const getTFGNames = async () => {
  * @returns {Promise<Array>} Lista de TFGs
  */
 const getAllTFGs = async (filters = {}) => {
-    let query = {};
+    try {
+        let query = {};
 
-    // Aplicar filtros si existen
-    if (filters.year) query.year = filters.year;
-    if (filters.degree) query.degree = filters.degree;
-    if (filters.verified !== undefined) query.verified = filters.verified;
+        // Aplicar filtros si existen
+        if (filters.year) query.year = filters.year;
+        if (filters.degree) query.degree = filters.degree;
+        if (filters.verified !== undefined) query.verified = filters.verified;
 
-    return await tfgsModel.find(query);
+        return await tfgsModel.find(query);
+    } catch (error) {
+        logger.error('Error obteniendo TFGs', { error, filters });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
  * Obtiene un TFG por su ID
  * @async
  * @param {string} id - ID del TFG
+ * @param {boolean} verified - Si se requiere verificación
  * @returns {Promise<Object>} TFG encontrado
  * @throws {Error} Si el TFG no existe o no está verificado
  */
 const getTFGById = async (id, verified) => {
-    const tfg = await tfgsModel.findById(id).select('year degree student tfgTitle keywords advisor abstract verified');
+    try {
+        const tfg = await tfgsModel.findById(id).select('year degree student tfgTitle keywords advisor abstract verified');
 
-    if (!tfg) {
-        const error = new Error('TFG_NOT_EXISTS');
-        error.status = 404;
-        throw error;
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        if (!tfg.verified && !verified) {
+            throw new Error('TFG_NOT_VERIFIED');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS' || error.message === 'TFG_NOT_VERIFIED') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error obteniendo TFG: ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    if (!tfg.verified && !verified) {
-        const error = new Error('TFG_NOT_VERIFIED');
-        error.status = 403;
-        throw error;
-    }
-
-    return tfg;
 };
 
 /**
@@ -64,42 +88,48 @@ const getTFGById = async (id, verified) => {
  * @returns {Promise<Object>} Resultado paginado
  */
 const getPaginatedTFGs = async (filters = {}, page = 1, pageSize = 10) => {
-    let query = {};
+    try {
+        let query = {};
 
-    // Filtros básicos
-    if (filters.year) query.year = filters.year;
-    if (filters.degree) query.degree = filters.degree;
-    if (filters.advisor) query.advisor = filters.advisor;
-    if (filters.verified !== undefined) query.verified = filters.verified;
-    // Filtro de búsqueda
-    if (filters.search) {
-        const searchRegex = { $regex: filters.search, $options: "i" };
-        query.$or = [
-            { student: searchRegex },
-            { tfgTitle: searchRegex },
-            { keywords: { $in: filters.search.split(" ") } },
-            { abstract: searchRegex }
-        ];
+        // Filtros básicos
+        if (filters.year) query.year = filters.year;
+        if (filters.degree) query.degree = filters.degree;
+        if (filters.advisor) query.advisor = filters.advisor;
+        if (filters.verified !== undefined) query.verified = filters.verified;
+
+        // Filtro de búsqueda
+        if (filters.search) {
+            const searchRegex = { $regex: filters.search, $options: "i" };
+            query.$or = [
+                { student: searchRegex },
+                { tfgTitle: searchRegex },
+                { keywords: { $in: filters.search.split(" ") } },
+                { abstract: searchRegex }
+            ];
+        }
+
+        const skip = (page - 1) * pageSize;
+
+        // Consulta principal
+        const [tfgs, totalTFGs] = await Promise.all([
+            tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
+                .skip(skip)
+                .limit(pageSize),
+            tfgsModel.countDocuments(query)
+        ]);
+
+        const totalPages = Math.ceil(totalTFGs / pageSize);
+
+        return {
+            tfgs,
+            totalPages,
+            currentPage: page,
+            totalTFGs
+        };
+    } catch (error) {
+        logger.error('Error obteniendo TFGs paginados', { error, filters, page, pageSize });
+        throw new Error('DEFAULT_ERROR');
     }
-
-    const skip = (page - 1) * pageSize;
-
-    // Consulta principal
-    const [tfgs, totalTFGs] = await Promise.all([
-        tfgsModel.find(query, 'year degree student tfgTitle keywords advisor abstract')
-            .skip(skip)
-            .limit(pageSize),
-        tfgsModel.countDocuments(query)
-    ]);
-
-    const totalPages = Math.ceil(totalTFGs / pageSize);
-
-    return {
-        tfgs,
-        totalPages,
-        currentPage: page,
-        totalTFGs
-    };
 };
 
 /**
@@ -110,21 +140,27 @@ const getPaginatedTFGs = async (filters = {}, page = 1, pageSize = 10) => {
  * @throws {Error} Si el año o el grado no existen
  */
 const validateYearAndDegree = async (year, degree) => {
-    const [yearExists, degreeExists] = await Promise.all([
-        yearsModel.findOne({ year }),
-        degreesModel.findOne({ degree })
-    ]);
+    try {
+        const [yearExists, degreeExists] = await Promise.all([
+            yearsModel.findOne({ year }),
+            degreesModel.findOne({ degree })
+        ]);
 
-    if (!yearExists) {
-        const error = new Error('El curso académico no es válido.');
-        error.status = 400;
-        throw error;
-    }
+        if (!yearExists) {
+            throw new Error('YEAR_NOT_FOUND');
+        }
 
-    if (!degreeExists) {
-        const error = new Error('La titulación no es válida.');
-        error.status = 400;
-        throw error;
+        if (!degreeExists) {
+            throw new Error('DEGREE_NOT_FOUND');
+        }
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'YEAR_NOT_FOUND' || error.message === 'DEGREE_NOT_FOUND') {
+            throw error;
+        }
+
+        logger.error('Error validando año y grado', { error, year, degree });
+        throw new Error('VALIDATION_ERROR');
     }
 };
 
@@ -135,7 +171,29 @@ const validateYearAndDegree = async (year, degree) => {
  * @returns {Promise<Object>} TFG creado
  */
 const createTFG = async (tfgData) => {
-    return await tfgsModel.create(tfgData);
+    try {
+        return await tfgsModel.create(tfgData);
+    } catch (error) {
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error('Error de validación al crear TFG', { error, validationError });
+            throw validationError;
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error('TFG duplicado', { error, tfgData });
+            throw new Error('TFG_ALREADY_EXISTS');
+        }
+
+        logger.error('Error creando TFG', { error, tfgData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -146,7 +204,44 @@ const createTFG = async (tfgData) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const updateTFG = async (id, updateData) => {
-    return await tfgsModel.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+    try {
+        const tfg = await tfgsModel.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error(`Error de validación al actualizar TFG ${id}`, { error, validationError, updateData });
+            throw validationError;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error actualizando TFG ${id}`, { error, updateData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -157,11 +252,33 @@ const updateTFG = async (id, updateData) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const updateTFGFile = async (id, fileUrl) => {
-    return await tfgsModel.findByIdAndUpdate(
-        id,
-        { $set: { link: fileUrl } },
-        { new: true }
-    );
+    try {
+        const tfg = await tfgsModel.findByIdAndUpdate(
+            id,
+            { $set: { link: fileUrl } },
+            { new: true }
+        );
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error actualizando archivo de TFG ${id}`, { error, fileUrl });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -171,15 +288,37 @@ const updateTFGFile = async (id, fileUrl) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const verifyTFG = async (id) => {
-    return await tfgsModel.findByIdAndUpdate(
-        id,
-        {
-            $set: {
-                verified: true
-            }
-        },
-        { new: true }
-    );
+    try {
+        const tfg = await tfgsModel.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    verified: true
+                }
+            },
+            { new: true }
+        );
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error verificando TFG ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -189,7 +328,29 @@ const verifyTFG = async (id) => {
  * @returns {Promise<Object>} Resultado de la eliminación
  */
 const deleteTFG = async (id) => {
-    return await tfgsModel.delete({ _id: id });
+    try {
+        const result = await tfgsModel.delete({ _id: id });
+
+        if (!result || result.deletedCount === 0) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return result;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error eliminando TFG ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -199,11 +360,35 @@ const deleteTFG = async (id) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const incrementTFGViews = async (id) => {
-    return await tfgsModel.findByIdAndUpdate(
-        id,
-        { $inc: { views: 1 } },
-        { new: true }
-    );
+    try {
+        const tfg = await tfgsModel.findByIdAndUpdate(
+            id,
+            { $inc: { views: 1 } },
+            { new: true }
+        );
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error incrementando visualizaciones de TFG ${id}`, { error });
+        // Silenciamos este error para el usuario, ya que no es crítico
+        // pero seguimos registrándolo en el log
+        return null;
+    }
 };
 
 /**
@@ -213,11 +398,35 @@ const incrementTFGViews = async (id) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const incrementTFGDownloads = async (id) => {
-    return await tfgsModel.findByIdAndUpdate(
-        id,
-        { $inc: { downloadCount: 1 } },
-        { new: true }
-    );
+    try {
+        const tfg = await tfgsModel.findByIdAndUpdate(
+            id,
+            { $inc: { downloadCount: 1 } },
+            { new: true }
+        );
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        return tfg;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error incrementando descargas de TFG ${id}`, { error });
+        // Silenciamos este error para el usuario, ya que no es crítico
+        // pero seguimos registrándolo en el log
+        return null;
+    }
 };
 
 module.exports = {

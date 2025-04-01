@@ -1,13 +1,6 @@
-const { check, validationResult } = require('express-validator');
+const { check } = require('express-validator');
+const validateResults = require('../utils/handleValidator');
 const { isValidUtadEmail } = require('../utils/handleEmailValidator');
-
-const validateResults = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-};
 
 /**
  * Middleware personalizado para validar el formato de correo U-tad
@@ -37,6 +30,12 @@ const validateCreateAdvisor = [
     check('department')
         .optional()
         .isString().withMessage('DEPARTMENT_MUST_BE_STRING'),
+    check('specialties')
+        .optional()
+        .isArray().withMessage('SPECIALTIES_MUST_BE_ARRAY'),
+    check('active')
+        .optional()
+        .isBoolean().withMessage('ACTIVE_MUST_BE_BOOLEAN'),
     (req, res, next) => validateResults(req, res, next)
 ];
 
@@ -53,6 +52,12 @@ const validateUpdateAdvisor = [
     check('department')
         .optional()
         .isString().withMessage('DEPARTMENT_MUST_BE_STRING'),
+    check('specialties')
+        .optional()
+        .isArray().withMessage('SPECIALTIES_MUST_BE_ARRAY'),
+    check('active')
+        .optional()
+        .isBoolean().withMessage('ACTIVE_MUST_BE_BOOLEAN'),
     (req, res, next) => validateResults(req, res, next)
 ];
 

@@ -24,6 +24,23 @@ const getDegrees = async (req, res) => {
 };
 
 /**
+ * Obtiene un grado académico por su ID
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getDegree = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const degree = await degreeService.getDegreeById(id);
+        createResponse(res, 200, degree);
+    } catch (error) {
+        logger.error(`Error obteniendo grado académico ${req.params.id}`, { error });
+        errorHandler(error, res);
+    }
+};
+
+/**
  * Crea un nuevo grado académico
  * @async
  * @param {Object} req - Objeto de petición Express
@@ -32,6 +49,10 @@ const getDegrees = async (req, res) => {
 const createDegree = async (req, res) => {
     try {
         const degreeData = req.matchedData || req.body;
+
+        if (!degreeData || !degreeData.degree) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
 
         // Verificar si ya existe un grado con el mismo nombre
         const existingDegree = await degreeService.findDegreeByName(degreeData.degree);
@@ -57,6 +78,16 @@ const updateDegree = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
+
+        if (!updateData || Object.keys(updateData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        // Verificar que el grado existe
+        const degree = await degreeService.getDegreeById(id);
+        if (!degree) {
+            return errorHandler(new Error('DEGREE_NOT_FOUND'), res);
+        }
 
         // Si se está actualizando el nombre, verificar que no exista otro con ese nombre
         if (updateData.degree) {
@@ -84,6 +115,12 @@ const deleteDegree = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Verificar que el grado existe
+        const degree = await degreeService.getDegreeById(id);
+        if (!degree) {
+            return errorHandler(new Error('DEGREE_NOT_FOUND'), res);
+        }
+
         // Verificar si el grado está asociado a TFGs
         const isUsed = await degreeService.isDegreeUsedInTFGs(id);
         if (isUsed) {
@@ -100,6 +137,7 @@ const deleteDegree = async (req, res) => {
 
 module.exports = {
     getDegrees,
+    getDegree,
     createDegree,
     updateDegree,
     deleteDegree

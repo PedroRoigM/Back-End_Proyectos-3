@@ -6,6 +6,8 @@ const express = require('express');
 const router = express.Router();
 const {
     getYears,
+    getYear,
+    getCurrentYear,
     createYear,
     deleteYear,
     updateYear
@@ -27,6 +29,8 @@ const adminRole = ["administrador"];
  * Rutas de consulta
  */
 router.get('/', authMiddleware, getYears);
+router.get('/current', authMiddleware, getCurrentYear);
+router.get('/:id', authMiddleware, validateIdMongo, getYear);
 
 /**
  * Rutas de creación y modificación

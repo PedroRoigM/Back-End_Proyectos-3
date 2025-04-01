@@ -24,6 +24,42 @@ const getYears = async (req, res) => {
 };
 
 /**
+ * Obtiene un año académico por su ID
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getYear = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const year = await yearService.getYearById(id);
+        createResponse(res, 200, year);
+    } catch (error) {
+        logger.error(`Error obteniendo año académico ${req.params.id}`, { error });
+        errorHandler(error, res);
+    }
+};
+
+/**
+ * Obtiene el año académico actual
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getCurrentYear = async (req, res) => {
+    try {
+        const currentYear = await yearService.getCurrentYear();
+        if (!currentYear) {
+            return errorHandler(new Error('YEAR_NOT_FOUND'), res);
+        }
+        createResponse(res, 200, currentYear);
+    } catch (error) {
+        logger.error('Error obteniendo año académico actual', { error });
+        errorHandler(error, res);
+    }
+};
+
+/**
  * Crea un nuevo año académico
  * @async
  * @param {Object} req - Objeto de petición Express
@@ -32,6 +68,15 @@ const getYears = async (req, res) => {
 const createYear = async (req, res) => {
     try {
         const yearData = req.matchedData || req.body;
+
+        if (!yearData || !yearData.year) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        // Verificar formato del año (XX/XX)
+        if (!/^\d{2}\/\d{2}$/.test(yearData.year)) {
+            return errorHandler(new Error('INVALID_YEAR_FORMAT'), res);
+        }
 
         // Verificar si ya existe un año con el mismo nombre
         const existingYear = await yearService.findYearByName(yearData.year);
@@ -58,7 +103,22 @@ const updateYear = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        // Si se está actualizando el year, verificar que no exista otro con ese nombre
+        if (!updateData || Object.keys(updateData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        // Verificar que el año existe
+        const year = await yearService.getYearById(id);
+        if (!year) {
+            return errorHandler(new Error('YEAR_NOT_FOUND'), res);
+        }
+
+        // Verificar formato del año si se está actualizando
+        if (updateData.year && !/^\d{2}\/\d{2}$/.test(updateData.year)) {
+            return errorHandler(new Error('INVALID_YEAR_FORMAT'), res);
+        }
+
+        // Si se está actualizando el año, verificar que no exista otro con ese nombre
         if (updateData.year) {
             const existingYear = await yearService.findYearByName(updateData.year);
             if (existingYear && existingYear._id.toString() !== id) {
@@ -84,6 +144,12 @@ const deleteYear = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Verificar que el año existe
+        const year = await yearService.getYearById(id);
+        if (!year) {
+            return errorHandler(new Error('YEAR_NOT_FOUND'), res);
+        }
+
         // Verificar si el año está asociado a TFGs
         const isUsed = await yearService.isYearUsedInTFGs(id);
         if (isUsed) {
@@ -100,6 +166,8 @@ const deleteYear = async (req, res) => {
 
 module.exports = {
     getYears,
+    getYear,
+    getCurrentYear,
     createYear,
     updateYear,
     deleteYear

@@ -19,7 +19,6 @@ const {
     patchVerifiedTFG,
     getTFGsNames,
     getFileTFG,
-    getFilePhotosTFG,
     getUnverifiedTFGs,
     getTFGs
 } = require('../controllers/tfgs');
@@ -28,7 +27,6 @@ const {
     validateCreateTFG,
     validatePutTFG,
     validateSearcher,
-    validateVerify,
     validatePatchTFG
 } = require('../validators/tfgs');
 
@@ -49,7 +47,6 @@ router.post('/unverified/:page_number', authMiddleware, checkRole(adminRoles), v
 // Detalles y archivos
 router.get('/:id', authMiddleware, validateIdMongo, getTFG);
 router.get('/pdf/:id', authMiddleware, validateIdMongo, getFileTFG);
-router.get('/pdf/images/:id', authMiddleware, validateIdMongo, getFilePhotosTFG);
 
 /**
  * Rutas de creación y edición

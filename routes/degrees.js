@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const {
     getDegrees,
+    getDegree,
     createDegree,
     deleteDegree,
     updateDegree
@@ -27,6 +28,7 @@ const adminRole = ["administrador"];
  * Rutas de consulta
  */
 router.get('/', authMiddleware, getDegrees);
+router.get('/:id', authMiddleware, validateIdMongo, getDegree);
 
 /**
  * Rutas de creación y modificación

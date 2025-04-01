@@ -1,12 +1,6 @@
 const { check, validationResult } = require('express-validator');
+const { validateResults } = require('../utils/handleValidator');
 
-const validateResults = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-};
 
 // Validación para el id de MongoDB
 const validateIdMongo = [

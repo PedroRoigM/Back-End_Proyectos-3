@@ -24,6 +24,11 @@ const authMiddleware = async (req, res, next) => {
             return errorHandler(new Error('EMAIL_NOT_VALIDATED'), res);
         }
 
+        // Verificar si la cuenta está bloqueada
+        if (user.isLocked && user.isLocked()) {
+            return errorHandler(new Error('ACCOUNT_LOCKED'), res);
+        }
+
         req.user = user;
         next();
     } catch (err) {

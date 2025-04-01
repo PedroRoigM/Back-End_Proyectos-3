@@ -8,6 +8,7 @@ const authMiddleware = require('../middleware/session');
 const checkRole = require('../middleware/role');
 const {
     getAdvisors,
+    getAdvisor,
     createAdvisor,
     deleteAdvisor,
     updateAdvisor
@@ -27,6 +28,7 @@ const adminRoles = ['administrador', 'coordinador'];
  * Rutas de consulta
  */
 router.get('/', authMiddleware, getAdvisors);
+router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
 
 /**
  * Rutas de creación y modificación

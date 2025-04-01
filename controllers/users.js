@@ -40,6 +40,24 @@ const getUser = async (req, res) => {
 };
 
 /**
+ * Busca usuarios por correo o nombre
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const searchUsers = async (req, res) => {
+    try {
+        const { search, role } = req.query;
+        // Implementar esta funcionalidad en el servicio
+        // const users = await userService.searchUsersByEmailOrName(search, role);
+        createResponse(res, 200, []); // Placeholder
+    } catch (error) {
+        logger.error('Error buscando usuarios', { error, search: req.query.search, role: req.query.role });
+        errorHandler(error, res);
+    }
+};
+
+/**
  * Registra un nuevo usuario
  * @async
  * @param {Object} req - Objeto de petición Express
@@ -48,6 +66,11 @@ const getUser = async (req, res) => {
 const registerCtrl = async (req, res) => {
     try {
         const userData = req.matchedData || req.body;
+
+        if (!userData || !userData.email || !userData.password || !userData.name) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         const { user, token, verificationCode } = await userService.registerUser(userData);
 
         // Aquí iría la lógica para enviar el código por email
@@ -69,10 +92,15 @@ const registerCtrl = async (req, res) => {
 const loginCtrl = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const { user, token } = await userService.loginUser(email, password);
 
+        if (!email || !password) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        const { user, token } = await userService.loginUser(email, password);
         createResponse(res, 200, { token, user });
     } catch (error) {
+        logger.error('Error en login', { error, email: req.body.email });
         errorHandler(error, res);
     }
 };
@@ -88,6 +116,13 @@ const updateUser = async (req, res) => {
         const { id } = req.params;
         const updateData = req.matchedData || req.body;
 
+        if (!updateData || Object.keys(updateData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        // Verificar que el usuario existe
+        await userService.getUserById(id);
+
         // Verificar permiso: solo administradores o el mismo usuario pueden actualizar
         const isAuthorized = req.user.role === 'administrador' || req.user._id.toString() === id;
         if (!isAuthorized) {
@@ -98,6 +133,37 @@ const updateUser = async (req, res) => {
         createResponse(res, 200, updatedUser);
     } catch (error) {
         logger.error(`Error actualizando usuario ${req.params.id}`, { error });
+        errorHandler(error, res);
+    }
+};
+
+/**
+ * Actualiza el rol de un usuario (solo admin)
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const updateRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!role || !['administrador', 'coordinador', 'usuario'].includes(role)) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        // Verificar que es administrador
+        if (req.user.role !== 'administrador') {
+            return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
+        }
+
+        // Verificar que el usuario existe
+        await userService.getUserById(id);
+
+        const updatedUser = await userService.updateUser(id, { role });
+        createResponse(res, 200, updatedUser);
+    } catch (error) {
+        logger.error(`Error actualizando rol de usuario ${req.params.id}`, { error, role: req.body.role });
         errorHandler(error, res);
     }
 };
@@ -117,6 +183,9 @@ const deleteUser = async (req, res) => {
             return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
         }
 
+        // Verificar que el usuario existe
+        await userService.getUserById(id);
+
         await userService.deleteUser(id);
         createResponse(res, 200, { message: 'Usuario eliminado correctamente' });
     } catch (error) {
@@ -134,6 +203,11 @@ const deleteUser = async (req, res) => {
 const validateUser = async (req, res) => {
     try {
         const { code } = req.body;
+
+        if (!code) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         const result = await userService.validateUserAccount(req.user._id, code);
         createResponse(res, 200, { message: 'Cuenta validada correctamente' });
     } catch (error) {
@@ -151,6 +225,11 @@ const validateUser = async (req, res) => {
 const requestRecoverPassword = async (req, res) => {
     try {
         const { email } = req.body;
+
+        if (!email) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         const verificationCode = await userService.requestPasswordRecovery(email);
 
         // Aquí iría la lógica para enviar el código por email
@@ -172,6 +251,11 @@ const requestRecoverPassword = async (req, res) => {
 const recoverPassword = async (req, res) => {
     try {
         const { email, code, password } = req.body;
+
+        if (!email || !code || !password) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         await userService.recoverPassword(email, code, password);
         createResponse(res, 200, { message: 'Contraseña restablecida correctamente' });
     } catch (error) {
@@ -180,15 +264,14 @@ const recoverPassword = async (req, res) => {
     }
 };
 
-// TODO: updateRole, getUsersByEmailOrNameAndRole (buscar subcadena en email o nombre (si no recibe nada no poner filtros, va a entrar un unico campo "search" por lo que no diferenciar en la busqueda), tener en cuenta que puede recibir un rol o no)
-
-
 module.exports = {
     getUsers,
     getUser,
+    searchUsers,
     registerCtrl,
     loginCtrl,
     updateUser,
+    updateRole,
     deleteUser,
     validateUser,
     recoverPassword,

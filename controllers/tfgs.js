@@ -49,16 +49,21 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        var verified = false;
+        let verified = false;
+
         // Solo mostrar TFGs verificados a usuarios normales
-        if (["administrador", "coordinador"].includes(req.user.role)) {
-            const verified = true;
+        if (req.user && ["administrador", "coordinador"].includes(req.user.role)) {
+            verified = true;
         }
 
         const tfg = await tfgService.getTFGById(id, verified);
 
-        // Incrementa contador de visualizaciones
-        await tfgService.incrementTFGViews(id);
+        // Incrementa contador de visualizaciones (ignorar errores para que no afecte la respuesta principal)
+        try {
+            await tfgService.incrementTFGViews(id);
+        } catch (viewError) {
+            logger.warn(`No se pudo incrementar visitas para TFG ${id}`, { viewError });
+        }
 
         createResponse(res, 200, tfg);
     } catch (error) {
@@ -78,7 +83,13 @@ const getNextTFGS = async (req, res) => {
         const { page_number } = req.params;
         const filters = { ...req.query, ...req.body };
 
-        const result = await tfgService.getPaginatedTFGs(filters, parseInt(page_number));
+        // Validar que page_number es un número válido
+        const pageNumber = parseInt(page_number);
+        if (isNaN(pageNumber) || pageNumber < 1) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        const result = await tfgService.getPaginatedTFGs(filters, pageNumber);
         createResponse(res, 200, result);
     } catch (error) {
         logger.error('Error obteniendo TFGs paginados', { error, page: req.params.page_number, filters: req.body });
@@ -95,6 +106,10 @@ const getNextTFGS = async (req, res) => {
 const createTFG = async (req, res) => {
     try {
         const tfgData = req.body;
+
+        if (!tfgData || Object.keys(tfgData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
 
         // Validar que existan el año y el grado
         await tfgService.validateYearAndDegree(tfgData.year, tfgData.degree);
@@ -128,6 +143,10 @@ const putTFG = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
+        if (!updateData || Object.keys(updateData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         // Validar que existan el año y el grado
         await tfgService.validateYearAndDegree(updateData.year, updateData.degree);
 
@@ -154,8 +173,12 @@ const deleteTFG = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Eliminar primero el archivo asociado
-        await fileService.deleteFile(id);
+        // Eliminar primero el archivo asociado (ignorar errores en esta parte)
+        try {
+            await fileService.deleteFile(id);
+        } catch (fileError) {
+            logger.warn(`No se pudo eliminar el archivo del TFG ${id}`, { fileError });
+        }
 
         // Eliminar el TFG
         await tfgService.deleteTFG(id);
@@ -229,8 +252,12 @@ const getFileTFG = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Incrementa contador de descargas
-        await tfgService.incrementTFGDownloads(id);
+        // Incrementa contador de descargas (ignorar errores para no afectar la descarga principal)
+        try {
+            await tfgService.incrementTFGDownloads(id);
+        } catch (downloadError) {
+            logger.warn(`No se pudo incrementar descargas para TFG ${id}`, { downloadError });
+        }
 
         // Obtener el archivo
         const { fileBuffer, fileName } = await fileService.getTFGFile(id);
@@ -240,23 +267,6 @@ const getFileTFG = async (req, res) => {
         res.send(Buffer.from(fileBuffer));
     } catch (error) {
         logger.error(`Error obteniendo archivo de TFG ${req.params.id}`, { error });
-        errorHandler(error, res);
-    }
-};
-
-/**
- * Obtiene imágenes de las páginas del PDF de un TFG
- * @async
- * @param {Object} req - Objeto de petición Express
- * @param {Object} res - Objeto de respuesta Express
- */
-const getFilePhotosTFG = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const images = await fileService.getPDFImages(id);
-        createResponse(res, 200, images);
-    } catch (error) {
-        logger.error(`Error obteniendo imágenes de TFG ${req.params.id}`, { error });
         errorHandler(error, res);
     }
 };
@@ -272,7 +282,13 @@ const getUnverifiedTFGs = async (req, res) => {
         const { page_number } = req.params;
         const filters = { ...req.query, ...req.body, verified: false };
 
-        const result = await tfgService.getPaginatedTFGs(filters, parseInt(page_number));
+        // Validar que page_number es un número válido
+        const pageNumber = parseInt(page_number);
+        if (isNaN(pageNumber) || pageNumber < 1) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
+        const result = await tfgService.getPaginatedTFGs(filters, pageNumber);
         createResponse(res, 200, result);
     } catch (error) {
         logger.error('Error obteniendo TFGs no verificados', { error, page: req.params.page_number });
@@ -291,6 +307,5 @@ module.exports = {
     patchFileTFG,
     patchVerifiedTFG,
     getFileTFG,
-    getFilePhotosTFG,
     getUnverifiedTFGs
 };

@@ -7,7 +7,9 @@ const router = express.Router();
 const {
     getUsers,
     getUser,
+    searchUsers,
     updateUser,
+    updateRole,
     loginCtrl,
     registerCtrl,
     validateUser,
@@ -20,11 +22,13 @@ const checkRole = require('../middleware/role');
 const {
     validatorGetUser,
     validatorUpdateUser,
+    validatorUpdateRole,
     validatorLogin,
     validatorRegister,
     validatorValidateUser,
     validatorRequestRecoverPassword,
-    validatorRecoverPassword
+    validatorRecoverPassword,
+    validatorSearchUsers
 } = require('../validators/users');
 
 /**
@@ -46,8 +50,10 @@ router.post('/validate', authMiddleware, validatorValidateUser, validateUser);
 
 // Obtención y gestión de usuarios
 router.get('/', authMiddleware, getUsers);
+router.get('/search', authMiddleware, validatorSearchUsers, searchUsers);
 router.get('/:id', authMiddleware, validatorGetUser, getUser);
 router.patch('/:id', authMiddleware, validatorGetUser, validatorUpdateUser, updateUser);
+router.patch('/:id/role', authMiddleware, checkRole(["administrador"]), validatorGetUser, validatorUpdateRole, updateRole);
 router.delete('/:id', authMiddleware, checkRole(["administrador"]), validatorGetUser, deleteUser);
 
 module.exports = router;

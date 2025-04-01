@@ -63,8 +63,12 @@ const validatorUpdateUser = [
     check('password')
         .optional()
         .isLength({ min: 8, max: 16 }).withMessage('La contraseña debe tener entre 8 y 16 caracteres'),
+    (req, res, next) => validateResults(req, res, next)
+];
+
+const validatorUpdateRole = [
     check('role')
-        .optional()
+        .exists().withMessage('El rol es obligatorio')
         .isIn(["administrador", "coordinador", "usuario"]).withMessage('El rol debe ser administrador, coordinador o usuario'),
     (req, res, next) => validateResults(req, res, next)
 ];
@@ -100,12 +104,24 @@ const validatorRecoverPassword = [
     (req, res, next) => validateResults(req, res, next)
 ];
 
+const validatorSearchUsers = [
+    check('search')
+        .optional()
+        .isString().withMessage('El parámetro de búsqueda debe ser una cadena de texto'),
+    check('role')
+        .optional()
+        .isIn(["administrador", "coordinador", "usuario"]).withMessage('El rol debe ser administrador, coordinador o usuario'),
+    (req, res, next) => validateResults(req, res, next)
+];
+
 module.exports = {
     validatorRegister,
     validatorLogin,
     validatorGetUser,
     validatorUpdateUser,
+    validatorUpdateRole,
     validatorValidateUser,
     validatorRequestRecoverPassword,
-    validatorRecoverPassword
+    validatorRecoverPassword,
+    validatorSearchUsers
 };

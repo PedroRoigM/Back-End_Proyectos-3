@@ -32,6 +32,10 @@ const createAdvisor = async (req, res) => {
     try {
         const advisorData = req.matchedData || req.body;
 
+        if (!advisorData || !advisorData.advisor) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
+
         // Verificar si ya existe un tutor con el mismo nombre
         const existingAdvisor = await advisorService.findAdvisorByName(advisorData.advisor);
         if (existingAdvisor) {
@@ -56,6 +60,10 @@ const updateAdvisor = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
+
+        if (!updateData || Object.keys(updateData).length === 0) {
+            return errorHandler(new Error('VALIDATION_ERROR'), res);
+        }
 
         // Si se está actualizando el nombre, verificar que no exista otro tutor con ese nombre
         if (updateData.advisor) {
@@ -89,6 +97,12 @@ const deleteAdvisor = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Verificar que el tutor existe
+        const advisor = await advisorService.getAdvisorById(id);
+        if (!advisor) {
+            return errorHandler(new Error('ADVISOR_NOT_FOUND'), res);
+        }
+
         // Verificar si el tutor está asociado a TFGs
         const isUsed = await advisorService.isAdvisorUsedInTFGs(id);
         if (isUsed) {
@@ -103,8 +117,26 @@ const deleteAdvisor = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene un tutor por su ID
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getAdvisor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const advisor = await advisorService.getAdvisorById(id);
+        createResponse(res, 200, advisor);
+    } catch (error) {
+        logger.error(`Error obteniendo tutor ${req.params.id}`, { error });
+        errorHandler(error, res);
+    }
+};
+
 module.exports = {
     getAdvisors,
+    getAdvisor,
     createAdvisor,
     updateAdvisor,
     deleteAdvisor

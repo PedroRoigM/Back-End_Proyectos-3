@@ -23,7 +23,7 @@ const uploadFile = async (fileBuffer, fileName) => {
         const ipfsFile = pinataResponse.IpfsHash;
         return `https://${config.PINATA_GATEWAY_URL}/ipfs/${ipfsFile}`;
     } catch (error) {
-        logger.error('Error subiendo archivo a Pinata', { error });
+        logger.error('Error subiendo archivo a Pinata', { error, fileName });
         throw new Error('ERROR_UPLOADING_FILE');
     }
 };
@@ -35,13 +35,18 @@ const uploadFile = async (fileBuffer, fileName) => {
  * @returns {Promise<Object>} TFG actualizado
  */
 const deleteFile = async (tfgId) => {
-    const tfg = await tfgsModel.findById(tfgId).select("link");
-
-    if (!tfg || !tfg.link || tfg.link === 'undefined') {
-        return { success: false, message: 'No se encontró el archivo a eliminar' };
-    }
-
     try {
+        const tfg = await tfgsModel.findById(tfgId).select("link");
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        if (!tfg.link || tfg.link === 'undefined') {
+            // No hay archivo para eliminar, pero no es un error
+            return { success: true, message: 'No se encontró el archivo a eliminar' };
+        }
+
         await DeleteFilePinata(tfg.link);
 
         // Actualizar el TFG para remover el link y marcar como no verificado
@@ -53,7 +58,21 @@ const deleteFile = async (tfgId) => {
 
         return updatedTFG;
     } catch (error) {
-        logger.error('Error eliminando archivo de Pinata', { error, tfgId });
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS' ||
+            error.message === 'FILE_URL_INVALID' ||
+            error.message === 'CID_NOT_FOUND' ||
+            error.message === 'PINATA_API_ERROR') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${tfgId}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error eliminando archivo de TFG ${tfgId}`, { error });
         throw new Error('ERROR_DELETING_FILE');
     }
 };
@@ -65,19 +84,38 @@ const deleteFile = async (tfgId) => {
  * @returns {Promise<Object>} Buffer del archivo y nombre
  */
 const getTFGFile = async (tfgId) => {
-    const tfg = await tfgsModel.findById(tfgId);
-
-    if (!tfg || !tfg.link || tfg.link === 'undefined') {
-        throw new Error('TFG_FILE_NOT_FOUND');
-    }
-
     try {
+        const tfg = await tfgsModel.findById(tfgId);
+
+        if (!tfg) {
+            throw new Error('TFG_NOT_EXISTS');
+        }
+
+        if (!tfg.link || tfg.link === 'undefined') {
+            throw new Error('TFG_FILE_NOT_FOUND');
+        }
+
         const fileBuffer = await GetFilePinata(tfg.link);
         const fileName = `tfg_${tfgId}.pdf`;
 
         return { fileBuffer, fileName, tfg };
     } catch (error) {
-        logger.error('Error obteniendo archivo de Pinata', { error, tfgId });
+        // Preservar errores específicos
+        if (error.message === 'TFG_NOT_EXISTS' ||
+            error.message === 'TFG_FILE_NOT_FOUND' ||
+            error.message === 'FILE_URL_INVALID' ||
+            error.message === 'PINATA_FETCH_ERROR' ||
+            error.message === 'FILE_FETCH_ERROR') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de TFG inválido: ${tfgId}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error obteniendo archivo de TFG ${tfgId}`, { error });
         throw new Error('ERROR_GETTING_FILE');
     }
 };
@@ -94,7 +132,15 @@ const getPDFImages = async (tfgId) => {
         const images = await handlePdfToImg(fileBuffer);
         return images;
     } catch (error) {
-        logger.error('Error convirtiendo PDF a imágenes', { error, tfgId });
+        // Si el error proviene de getTFGFile, preservarlo
+        if (error.message === 'TFG_NOT_EXISTS' ||
+            error.message === 'TFG_FILE_NOT_FOUND' ||
+            error.message === 'INVALID_ID' ||
+            error.message === 'ERROR_GETTING_FILE') {
+            throw error;
+        }
+
+        logger.error(`Error convirtiendo PDF a imágenes para TFG ${tfgId}`, { error });
         throw new Error('ERROR_CONVERTING_PDF');
     }
 };

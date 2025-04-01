@@ -3,6 +3,7 @@
  * @module services/degree.service
  */
 const { degreesModel, tfgsModel } = require('../models');
+const logger = require('../utils/logger');
 
 /**
  * Obtiene todos los grados académicos
@@ -11,8 +12,13 @@ const { degreesModel, tfgsModel } = require('../models');
  * @returns {Promise<Array>} Lista de grados
  */
 const getAllDegrees = async (onlyActive = false) => {
-    const query = onlyActive ? { active: true } : {};
-    return await degreesModel.find(query).select("_id degree abbreviation faculty active");
+    try {
+        const query = onlyActive ? { active: true } : {};
+        return await degreesModel.find(query).select("_id degree abbreviation faculty active");
+    } catch (error) {
+        logger.error('Error obteniendo grados académicos', { error, onlyActive });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -22,9 +28,14 @@ const getAllDegrees = async (onlyActive = false) => {
  * @returns {Promise<Object|null>} Grado encontrado o null
  */
 const findDegreeByName = async (name) => {
-    return await degreesModel.findOne({
-        degree: { $regex: new RegExp('^' + name + '$', 'i') }
-    });
+    try {
+        return await degreesModel.findOne({
+            degree: { $regex: new RegExp('^' + name + '$', 'i') }
+        });
+    } catch (error) {
+        logger.error(`Error buscando grado por nombre: ${name}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -34,7 +45,29 @@ const findDegreeByName = async (name) => {
  * @returns {Promise<Object|null>} Grado encontrado o null
  */
 const getDegreeById = async (id) => {
-    return await degreesModel.findById(id);
+    try {
+        const degree = await degreesModel.findById(id);
+
+        if (!degree) {
+            throw new Error('DEGREE_NOT_FOUND');
+        }
+
+        return degree;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'DEGREE_NOT_FOUND') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de grado inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error obteniendo grado por ID: ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -44,7 +77,29 @@ const getDegreeById = async (id) => {
  * @returns {Promise<Object>} Grado creado
  */
 const createDegree = async (degreeData) => {
-    return await degreesModel.create(degreeData);
+    try {
+        return await degreesModel.create(degreeData);
+    } catch (error) {
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error('Error de validación al crear grado', { error, validationError });
+            throw validationError;
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error('Grado duplicado', { error, degreeData });
+            throw new Error('DEGREE_ALREADY_EXISTS');
+        }
+
+        logger.error('Error creando grado académico', { error, degreeData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -55,11 +110,50 @@ const createDegree = async (degreeData) => {
  * @returns {Promise<Object|null>} Grado actualizado o null si no existe
  */
 const updateDegree = async (id, updateData) => {
-    return await degreesModel.findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true }
-    );
+    try {
+        const degree = await degreesModel.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!degree) {
+            throw new Error('DEGREE_NOT_FOUND');
+        }
+
+        return degree;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'DEGREE_NOT_FOUND') {
+            throw error;
+        }
+
+        // Verificar si es un error de validación de Mongoose
+        if (error.name === 'ValidationError') {
+            const validationError = new Error('VALIDATION_ERROR');
+            validationError.details = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            logger.error(`Error de validación al actualizar grado ${id}`, { error, validationError, updateData });
+            throw validationError;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de grado inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        // Verificar si es un error de duplicación (índice único)
+        if (error.code === 11000) {
+            logger.error(`Grado duplicado al actualizar ${id}`, { error, updateData });
+            throw new Error('DEGREE_ALREADY_EXISTS');
+        }
+
+        logger.error(`Error actualizando grado académico ${id}`, { error, updateData });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -69,11 +163,24 @@ const updateDegree = async (id, updateData) => {
  * @returns {Promise<boolean>} true si está en uso, false en caso contrario
  */
 const isDegreeUsedInTFGs = async (degreeId) => {
-    const degree = await degreesModel.findById(degreeId);
-    if (!degree) return false;
+    try {
+        const degree = await degreesModel.findById(degreeId);
+        if (!degree) {
+            return false;
+        }
 
-    const tfgsCount = await tfgsModel.countDocuments({ degree: degree.degree });
-    return tfgsCount > 0;
+        const tfgsCount = await tfgsModel.countDocuments({ degree: degree.degree });
+        return tfgsCount > 0;
+    } catch (error) {
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de grado inválido: ${degreeId}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error verificando uso de grado ${degreeId} en TFGs`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 /**
@@ -83,7 +190,29 @@ const isDegreeUsedInTFGs = async (degreeId) => {
  * @returns {Promise<Object>} Grado eliminado
  */
 const deleteDegree = async (id) => {
-    return await degreesModel.findByIdAndDelete(id);
+    try {
+        const degree = await degreesModel.findByIdAndDelete(id);
+
+        if (!degree) {
+            throw new Error('DEGREE_NOT_FOUND');
+        }
+
+        return degree;
+    } catch (error) {
+        // Preservar errores específicos
+        if (error.message === 'DEGREE_NOT_FOUND') {
+            throw error;
+        }
+
+        // Si es un error de MongoDB por ID inválido
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            logger.error(`ID de grado inválido: ${id}`, { error });
+            throw new Error('INVALID_ID');
+        }
+
+        logger.error(`Error eliminando grado académico ${id}`, { error });
+        throw new Error('DEFAULT_ERROR');
+    }
 };
 
 module.exports = {
