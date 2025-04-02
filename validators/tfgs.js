@@ -1,5 +1,5 @@
-const { check, validationResult } = require('express-validator');
-const { validateResults } = require('../utils/handleValidator');
+const { check } = require('express-validator');
+const validateResults = require('../utils/handleValidator');
 
 
 // Validación para el id de MongoDB

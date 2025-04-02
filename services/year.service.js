@@ -228,7 +228,7 @@ const getCurrentYear = async () => {
         const yearFormat = currentMonth >= 9 // Si es septiembre o después, es el inicio de un nuevo curso
             ? `${currentYear % 100}/${(currentYear + 1) % 100}`
             : `${(currentYear - 1) % 100}/${currentYear % 100}`;
-
+        console.log(yearFormat);
         return await yearsModel.findOne({ year: yearFormat });
     } catch (error) {
         logger.error('Error obteniendo año académico actual', { error });
