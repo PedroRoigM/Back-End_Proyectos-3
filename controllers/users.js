@@ -147,7 +147,10 @@ const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
-
+        // Si el id es el mismo que el del usuario autenticado, no se puede cambiar el rol
+        if (req.user._id.toString() === id) {
+            return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
+        }
         if (!role || !['administrador', 'coordinador', 'usuario'].includes(role)) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
