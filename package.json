@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cross-env NODE_ENV=test jest --forceExit --detectOpenHandles",
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage",
     "start": "node app.js"
   },
   "keywords": [],
@@ -20,7 +22,6 @@
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.0",
-    "mongoose-delete": "^1.0.2",
     "multer": "^1.4.5-lts.1",
     "pdf-image": "^2.0.0",
     "pdf2image": "^1.2.3",
@@ -30,7 +31,14 @@
     "yaml": "^2.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "@types/jest": "^29.5.14",
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "mongoose-delete": "^1.0.2",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.1.0",
+    "ts-jest": "^29.3.1"
   },
   "directories": {
     "test": "test"

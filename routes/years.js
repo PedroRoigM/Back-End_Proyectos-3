@@ -14,7 +14,6 @@ const {
 } = require('../controllers/years');
 const {
     validateIdMongo,
-    validateYear,
     validateUpdateYear
 } = require('../validators/years');
 const authMiddleware = require('../middleware/session');
@@ -36,7 +35,7 @@ router.get('/:id', authMiddleware, validateIdMongo, getYear);
  * Rutas de creación y modificación
  * Restringidas a administradores
  */
-router.post('/', authMiddleware, checkRole(adminRole), validateYear, createYear);
+router.post('/', authMiddleware, checkRole(adminRole), createYear);
 router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateUpdateYear, updateYear);
 
 /**

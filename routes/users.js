@@ -49,11 +49,11 @@ router.patch('/recover-password', validatorRecoverPassword, recoverPassword);
 router.post('/validate', authMiddleware, validatorValidateUser, validateUser);
 
 // Obtención y gestión de usuarios
-router.get('/', authMiddleware, getUsers);
-router.get('/search', authMiddleware, validatorSearchUsers, searchUsers);
+router.get('/', authMiddleware, checkRole(["administrador"]), getUsers);
+router.get('/search', authMiddleware, checkRole(["administrador"]), validatorSearchUsers, searchUsers);
 router.get('/:id', authMiddleware, validatorGetUser, getUser);
 router.patch('/:id', authMiddleware, validatorGetUser, validatorUpdateUser, updateUser);
-router.patch('/:id/role', authMiddleware, checkRole(["administrador"]), validatorGetUser, validatorUpdateRole, updateRole);
+router.patch('/role/:id', authMiddleware, checkRole(["administrador"]), validatorGetUser, validatorUpdateRole, updateRole);
 router.delete('/:id', authMiddleware, checkRole(["administrador"]), validatorGetUser, deleteUser);
 
 module.exports = router;

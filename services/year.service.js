@@ -71,13 +71,44 @@ const getYearById = async (id) => {
 /**
  * Crea un nuevo año académico
  * @async
- * @param {Object} yearData - Datos del año
  * @returns {Promise<Object>} Año creado
  */
-const createYear = async (yearData) => {
+const createYear = async () => {
     try {
-        return await yearsModel.create(yearData);
+        // Generar los datos del año académico actual
+        const yearData = await getCurrentYear();
+
+        // Registrar los datos para depuración
+        logger.info('Intentando crear año académico con datos:', yearData);
+
+        // Verificar si ya existe un año con ese nombre
+        const existingYear = await findYearByName(yearData.year);
+        if (existingYear) {
+            throw new Error('YEAR_ALREADY_EXISTS');
+        }
+
+        // Asegurarse de que los campos cumplen con el esquema
+        // Aquí solo incluimos los campos que sabemos que están en el modelo
+        const validYearData = {
+            year: yearData.year,
+            startDate: yearData.startDate,
+            endDate: yearData.endDate,
+            active: yearData.active || true
+        };
+
+        // Crear el nuevo año académico con los datos validados
+        return await yearsModel.create(validYearData);
     } catch (error) {
+        // Registrar el error completo para depuración
+        logger.error('Error detallado al crear año académico', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+            details: error.details || (error.errors ? Object.keys(error.errors).map(key => {
+                return { field: key, message: error.errors[key].message };
+            }) : undefined)
+        });
+
         // Verificar si es un error de validación de Mongoose
         if (error.name === 'ValidationError') {
             const validationError = new Error('VALIDATION_ERROR');
@@ -85,17 +116,19 @@ const createYear = async (yearData) => {
                 field: err.path,
                 message: err.message
             }));
-            logger.error('Error de validación al crear año académico', { error, validationError });
             throw validationError;
+        }
+
+        // Verificar si es un error específico que ya hemos lanzado
+        if (error.message === 'YEAR_ALREADY_EXISTS') {
+            throw error;
         }
 
         // Verificar si es un error de duplicación (índice único)
         if (error.code === 11000) {
-            logger.error('Año académico duplicado', { error, yearData });
             throw new Error('YEAR_ALREADY_EXISTS');
         }
 
-        logger.error('Error creando año académico', { error, yearData });
         throw new Error('DEFAULT_ERROR');
     }
 };
@@ -216,7 +249,7 @@ const deleteYear = async (id) => {
 /**
  * Obtiene el año académico actual
  * @async
- * @returns {Promise<Object|null>} Año actual o null
+ * @returns {Promise<Object>} Año actual
  */
 const getCurrentYear = async () => {
     try {
@@ -225,11 +258,32 @@ const getCurrentYear = async () => {
         const currentMonth = now.getMonth() + 1; // Meses en JavaScript van de 0 a 11
 
         // Determinar el formato del año académico (XX/XX)
-        const yearFormat = currentMonth >= 9 // Si es septiembre o después, es el inicio de un nuevo curso
-            ? `${currentYear % 100}/${(currentYear + 1) % 100}`
-            : `${(currentYear - 1) % 100}/${currentYear % 100}`;
-        console.log(yearFormat);
-        return await yearsModel.findOne({ year: yearFormat });
+        let yearStr;
+        if (currentMonth >= 9) { // Si es septiembre o después, es el inicio de un nuevo curso
+            const startYear = currentYear.toString().slice(-2);
+            const endYear = (currentYear + 1).toString().slice(-2);
+            yearStr = `${startYear}/${endYear}`;
+        } else {
+            const startYear = (currentYear - 1).toString().slice(-2);
+            const endYear = currentYear.toString().slice(-2);
+            yearStr = `${startYear}/${endYear}`;
+        }
+
+        // Formato de fechas corregido (para asegurar compatibilidad)
+        const startDate = currentMonth >= 9
+            ? new Date(`${currentYear}-09-01T00:00:00.000Z`)
+            : new Date(`${currentYear - 1}-09-01T00:00:00.000Z`);
+
+        const endDate = currentMonth >= 9
+            ? new Date(`${currentYear + 1}-08-31T23:59:59.999Z`)
+            : new Date(`${currentYear}-08-31T23:59:59.999Z`);
+
+        return {
+            year: yearStr,
+            startDate: startDate,
+            endDate: endDate,
+            active: true
+        };
     } catch (error) {
         logger.error('Error obteniendo año académico actual', { error });
         throw new Error('DEFAULT_ERROR');

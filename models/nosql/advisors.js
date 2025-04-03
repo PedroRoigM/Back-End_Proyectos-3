@@ -9,20 +9,6 @@ const AdvisorSchema = new mongoose.Schema({
         trim: true,
         index: true
     },
-    email: {
-        type: String,
-        trim: true,
-        lowercase: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Por favor ingrese un email válido']
-    },
-    department: {
-        type: String,
-        trim: true
-    },
-    specialties: {
-        type: [String],
-        default: []
-    },
     active: {
         type: Boolean,
         default: true

@@ -67,27 +67,10 @@ const getCurrentYear = async (req, res) => {
  */
 const createYear = async (req, res) => {
     try {
-        const yearData = req.matchedData || req.body;
-
-        if (!yearData || !yearData.year) {
-            return errorHandler(new Error('VALIDATION_ERROR'), res);
-        }
-
-        // Verificar formato del año (XX/XX)
-        if (!/^\d{2}\/\d{2}$/.test(yearData.year)) {
-            return errorHandler(new Error('INVALID_YEAR_FORMAT'), res);
-        }
-
-        // Verificar si ya existe un año con el mismo nombre
-        const existingYear = await yearService.findYearByName(yearData.year);
-        if (existingYear) {
-            return errorHandler(new Error('YEAR_ALREADY_EXISTS'), res);
-        }
-
-        const createdYear = await yearService.createYear(yearData);
+        const createdYear = await yearService.createYear();
         createResponse(res, 201, createdYear);
     } catch (error) {
-        logger.error('Error creando año académico', { error, yearData: req.body });
+        logger.error('Error creando año académico', { error });
         errorHandler(error, res);
     }
 };

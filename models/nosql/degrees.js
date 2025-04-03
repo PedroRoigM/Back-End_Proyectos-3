@@ -13,10 +13,6 @@ const DegreeSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    faculty: {
-        type: String,
-        trim: true
-    },
     active: {
         type: Boolean,
         default: true
