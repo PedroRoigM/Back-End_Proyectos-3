@@ -211,7 +211,7 @@ const validateUser = async (req, res) => {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        const result = await userService.validateUserAccount(req.user._id, code);
+        await userService.validateUserAccount(req.user._id, code);
         createResponse(res, 200, { message: 'Cuenta validada correctamente' });
     } catch (error) {
         logger.error(`Error validando usuario ${req.user._id}`, { error });
@@ -233,7 +233,7 @@ const requestRecoverPassword = async (req, res) => {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        const verificationCode = await userService.requestPasswordRecovery(email);
+        await userService.requestPasswordRecovery(email);
 
         // Aquí iría la lógica para enviar el código por email
         // await emailService.sendPasswordRecoveryCode(email, verificationCode);

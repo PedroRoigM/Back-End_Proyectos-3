@@ -103,9 +103,11 @@ const createResponse = (res, status, data = null, message = null) => {
  * @param {Object} res - Objeto de respuesta Express
  */
 const errorHandler = (error, res) => {
+    // Obtén el tipo de error y la información de ERROR_TYPES
     const errorType = error.message || 'DEFAULT_ERROR';
     const errorInfo = ERROR_TYPES[errorType] || ERROR_TYPES.DEFAULT_ERROR;
 
+    // Obtiene el código HTTP y el mensaje del error
     const status = error.status || errorInfo.code || 500;
     const message = errorInfo.message || 'Error interno del servidor';
 
@@ -113,6 +115,7 @@ const errorHandler = (error, res) => {
     const logger = require('./logger');
     logger.error(`Error manejado: ${errorType}`, { error });
 
+    // Construir respuesta
     const response = {
         success: false,
         error: errorType,
@@ -120,8 +123,8 @@ const errorHandler = (error, res) => {
         status: status
     };
 
-    // Si existen detalles adicionales y estamos en desarrollo
-    if (error.details && process.env.NODE_ENV !== 'production') {
+    // Si existen detalles adicionales
+    if (error.details) {
         response.details = error.details;
     }
 
