@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2UxMzRiYjhkZDNiYTc4ODQxZTliMzgiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDI4ODU3MjMsImV4cCI6MTc0NDA5NTMyM30.fimD7CVtbcvN4pQMmxIW5RMft-d2TH7E3Aau3DDB_U4
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2YzN2Q1ZDAzZDU4OTg2ODJhNjBjYWYiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQ0MDEwNTkxLCJleHAiOjE3NDUyMjAxOTF9.K2FBv277mwDIxlww2t-mdIa2Z2ROde0ZtgH7-gcvpC0
 
 GET https://api-937n.onrender.com/api/users
 
@@ -26,7 +26,7 @@ Content-Type: application/json
 POST http://localhost:3000/api/users/register
 Content-Type: application/json
 
-{"name":"Pedro","email":"pedro.roig@live.u-tad.com","password":"123456789"}
+{"name":"Pedro","email":"pedro.roig@live.u-tad.com","password":"Peja5021**"}
 
 ###
 POST http://localhost:3000/api/users/validate
@@ -34,7 +34,7 @@ Authorization: {{authToken}}
 Content-Type: application/json
 
 {
-    "code": "670237"
+    "code": "194127"
 }
 
 ###
@@ -43,7 +43,7 @@ Content-Type: application/json
 
 {
     "email": "pedro.roig@live.u-tad.com",
-    "password": ""
+    "password": "Peja5021**"
 }
 
 ###
@@ -75,8 +75,8 @@ Content-Type: application/json
 ###
 DELETE http://localhost:3000/api/tfgs/67d13f04c94da22679fb810c
 ###
-GET https://api-937n.onrender.com/api/tfgs
-
+POST http://localhost:3000/api/tfgs/pages/1
+Authorization: {{authToken}}
 ###
 GET http://localhost:3000/api/tfgs/names
 Authorization: {{authToken}}
@@ -115,7 +115,8 @@ Content-Type: application/json
 
 # patch para enviar un pdf
 ###
-PATCH http://localhost:3000/api/tfgs/pdf/67cc53de5e9afb19d01be75b
+PATCH http://localhost:3000/api/tfgs/pdf/67ecedec17caad233580f88f
+Authorization: {{authToken}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -161,7 +162,7 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:3000/api/years
+GET http://localhost:3000/api/years/current
 Authorization: {{authToken}}
 
 ###
@@ -227,4 +228,73 @@ Content-Type: application/json
 {
     "email": "peroigmorera@example2.com",
     "password": "123456789"
+}
+
+### Validar un TFG
+PATCH http://localhost:3000/api/tfgs/verify/67cc54842d5bc7cc91883375
+Authorization: {{authToken}}
+
+### Buscar TFGs
+POST http://localhost:3000/api/tfgs/pages/1
+Authorization: {{authToken}}
+
+### Eliminar un TFG
+DELETE http://localhost:3000/api/tfgs/67cc54842d5bc7cc91883375 HTTP/1.1
+Authorization: {{authToken}}
+
+### Crear otro usuario de ejemplo
+POST http://localhost:3000/api/users/register
+Content-Type: application/json
+
+{"name":"Example","email":"example.role@live.u-tad.com","password":"example123456789"}
+
+###
+@exampleToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2VlNTk0MDg1MmIzYjQzN2VkMzZhYTMiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDM2NzM3NTMsImV4cCI6MTc0NDg4MzM1M30.lASgLSZMdZE4qGs05N7TfQE5DNSYxNshPgY3zpLyeu4
+
+### Validar el usuario creado
+POST http://localhost:3000/api/users/validate
+Authorization: {{exampleToken}}
+Content-Type: application/json
+
+{
+    "code": "382314"
+}
+
+###
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+
+{
+    "email": "example.role@live.u-tad.com",
+    "password": "example123456789"
+}
+
+### Cambiar el rol de un usuario
+PATCH http://localhost:3000/api/users/role/67ee5816852b3b437ed36a97
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+    "role": "coordinador"
+}
+
+###
+PATCH http://localhost:3000/api/years/67f12e6a1fff67f817a4eba9
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+    "active": false
+}
+
+### 
+GET http://localhost:3000/api/years/67f12f241fff67f817a4ebb4
+Authorization: {{authToken}}
+
+### Recuperar contraseña
+POST http://localhost:3000/api/users/recover-password
+Content-Type: application/json
+
+{
+    "email": "pedro.roig@live.u-tad.com"
 }

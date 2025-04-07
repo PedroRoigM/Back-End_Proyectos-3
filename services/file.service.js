@@ -6,7 +6,6 @@ const { tfgsModel } = require('../models');
 const uploadToPinata = require('../utils/UploadToPinata');
 const DeleteFilePinata = require('../utils/DeleteFilePinata');
 const GetFilePinata = require('../utils/GetFilePinata');
-const handlePdfToImg = require('../utils/handlePdfToImg');
 const config = require('../config');
 const logger = require('../utils/logger');
 
@@ -120,34 +119,8 @@ const getTFGFile = async (tfgId) => {
     }
 };
 
-/**
- * Convierte el PDF de un TFG a imágenes
- * @async
- * @param {string} tfgId - ID del TFG
- * @returns {Promise<Array>} Array de URLs de imágenes
- */
-const getPDFImages = async (tfgId) => {
-    try {
-        const { fileBuffer } = await getTFGFile(tfgId);
-        const images = await handlePdfToImg(fileBuffer);
-        return images;
-    } catch (error) {
-        // Si el error proviene de getTFGFile, preservarlo
-        if (error.message === 'TFG_NOT_EXISTS' ||
-            error.message === 'TFG_FILE_NOT_FOUND' ||
-            error.message === 'INVALID_ID' ||
-            error.message === 'ERROR_GETTING_FILE') {
-            throw error;
-        }
-
-        logger.error(`Error convirtiendo PDF a imágenes para TFG ${tfgId}`, { error });
-        throw new Error('ERROR_CONVERTING_PDF');
-    }
-};
-
 module.exports = {
     uploadFile,
     deleteFile,
-    getTFGFile,
-    getPDFImages
+    getTFGFile
 };

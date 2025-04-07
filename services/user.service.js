@@ -6,6 +6,45 @@ const { usersModel } = require('../models');
 const { encrypt, compare } = require('../utils/handlePassword');
 const { tokenSign } = require('../utils/handleJwt');
 const logger = require('../utils/logger');
+const { sendEmail } = require('../utils/handleMails');
+const config = require('../config');
+
+/**
+ * Envía un código de verificación por email
+ * @param {string} email - Email del usuario
+ * @param {string} code - Código de verificación
+ * @param {string} type - Tipo de código (verification o recovery)
+ * @returns {Promise<void>}
+ */
+const sendVerificationCode = async (email, code, type = 'verification') => {
+    try {
+        let subject, text;
+
+        if (type === 'recovery') {
+            subject = 'Código de recuperación de contraseña';
+            text = `Tu código de recuperación de contraseña es: ${code}. Este código expirará en 15 minutos.`;
+        } else {
+            subject = 'Código de verificación';
+            text = `Tu código de verificación es: ${code}. Este código expirará en 5 minutos.`;
+        }
+
+        // Crear el objeto de correo
+        const mailOptions = {
+            from: config.email,
+            to: email,
+            subject,
+            text
+        };
+
+        // Enviar el correo
+        await sendEmail(mailOptions);
+        console.log(`Código ${type} enviado a ${email}`);
+    } catch (error) {
+        console.error(`Error al enviar el código de ${type}:`, error);
+        throw createError(`ERROR_SENDING_${type.toUpperCase()}_CODE`, 500);
+    }
+};
+
 
 /**
  * Obtiene todos los usuarios
@@ -104,7 +143,7 @@ const registerUser = async (userData) => {
         // Generar código de validación
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await usersModel.findByIdAndUpdate(user._id, { code }, { new: true });
-
+        await sendVerificationCode(user.email, code);
         // Preparar respuesta
         const userResponse = user.toObject();
         delete userResponse.password;
@@ -356,7 +395,7 @@ const requestPasswordRecovery = async (email) => {
 
         // Generar código
         const code = Math.floor(100000 + Math.random() * 900000).toString();
-
+        await sendVerificationCode(email, code, 'recovery');
         // Guardar código y resetear intentos
         await usersModel.findByIdAndUpdate(user._id, {
             code,
