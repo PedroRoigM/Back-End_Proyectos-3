@@ -14,8 +14,7 @@ const logger = require('../utils/logger');
  */
 const getDegrees = async (req, res) => {
     try {
-        const onlyActive = req.query.active === 'true';
-        const degrees = await degreeService.getAll(onlyActive);
+        const degrees = await degreeService.getAll();
         createResponse(res, 200, degrees);
     } catch (error) {
         logger.error('Error obteniendo grados académicos', { error });

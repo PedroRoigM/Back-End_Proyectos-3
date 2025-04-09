@@ -348,6 +348,21 @@ class TfgService extends BaseService {
             return null;
         }
     }
+
+    /**
+     * Obtener todos los tfgTitles
+     * @async
+     * @return {Promise<Array>} Lista de tfgTitles
+     */
+    async getAllTFGTitles() {
+        try {
+            const tfgTitles = await this.model.find({}, 'tfgTitle').exec();
+            return tfgTitles.map(tfg => tfg.tfgTitle);
+        } catch (error) {
+            logger.error('Error obteniendo títulos de TFGs', { error });
+            throw new Error('DEFAULT_ERROR');
+        }
+    }
 }
 
 // Exportar una instancia del servicio (patrón singleton)

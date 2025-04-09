@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2Y2YTBlNGVlMTM2YTM4ZWRjYmMwNTkiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQ0MjE2MjkyLCJleHAiOjE3NDU0MjU4OTJ9.xpjMEXszrgOmMWDjR50IeSawe4nmlOgvNy_VlXyx8vg
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2Y2YWU1NTJmYzM3YzRlMDA5OGU0NTMiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NDQyMTk3NjQsImV4cCI6MTc0NTQyOTM2NH0.3mQc-url4Z6HuxC4Ze26Byh4pmojcQVKVUHXIT4WP-U
 
 GET https://api-937n.onrender.com/api/users
 
@@ -34,7 +34,7 @@ Authorization: {{authToken}}
 Content-Type: application/json
 
 {
-    "code": "760996"
+    "code": "620545"
 }
 
 ###
@@ -353,13 +353,8 @@ Content-Type: application/json
 }
 
 ### 
-POST http://localhost:3000/api/degrees/name
+GET http://localhost:3000/api/tfgs/names
 Authorization: {{authToken}}
-Content-Type: application/json
-
-{
-    "degree": "software"
-}
 
 
 ###

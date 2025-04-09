@@ -14,15 +14,7 @@ const logger = require('../utils/logger');
  */
 const getYears = async (req, res) => {
     try {
-        const onlyActive = { active: req.query.active === 'true' };
-
-        let years
-        if (onlyActive.active) {
-            years = await yearService.getAll(onlyActive);
-        }
-        else {
-            years = await yearService.getAll();
-        }
+        years = await yearService.getAll();
         createResponse(res, 200, years);
     } catch (error) {
         logger.error('Error obteniendo años académicos', { error });

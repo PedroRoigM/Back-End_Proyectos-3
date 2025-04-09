@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
  */
 const getTFGsNames = async (req, res) => {
     try {
-        const tfgs = await tfgService.getTFGsNames();
+        const tfgs = await tfgService.getAllTFGTitles();
         createResponse(res, 200, tfgs);
     } catch (error) {
         logger.error('Error obteniendo nombres de TFGs', { error });
