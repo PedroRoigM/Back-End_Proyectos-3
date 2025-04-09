@@ -51,7 +51,7 @@ const getTFG = async (req, res) => {
         const { id } = req.params;
         let isRestrictedUser = req.user && !["administrador", "coordinador"].includes(req.user.role);
         // Primero verificar si el TFG existe sin filtros de verificación
-        const tfgExists = await tfgService.getById(id);
+        const tfgExists = await tfgService.getTFGById(id);
 
         if (!tfgExists) {
             return createResponse(res, 404, { message: "TFG no encontrado" });

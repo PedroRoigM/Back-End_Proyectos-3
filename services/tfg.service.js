@@ -62,7 +62,7 @@ class TfgService extends BaseService {
      */
     async getTFGById(id, allowUnverified = false) {
         try {
-            const tfg = await this.model.findById(id, { $not: { link: undefined } })
+            const tfg = await this.model.findById(id)
                 .populate({ path: 'year', select: 'year' })
                 .populate({ path: 'degree', select: 'degree' })
                 .populate({ path: 'advisor', select: 'advisor' })
