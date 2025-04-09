@@ -3,16 +3,16 @@ const mongooseDelete = require('mongoose-delete');
 
 const TfgSchema = new mongoose.Schema({
     year: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'years',
         required: [true, 'El año académico es obligatorio'],
-        match: [/^\d{2}\/\d{2}$/, 'El formato debe ser XX/XX (ej. 22/23)'],
         index: true
     },
     degree: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'degrees',
         required: [true, 'La titulación es obligatoria'],
-        index: true,
-        ref: 'degrees' // Referencia al modelo de titulaciones
+        index: true
     },
     student: {
         type: String,
@@ -42,9 +42,9 @@ const TfgSchema = new mongoose.Schema({
         required: [true, 'El enlace al TFG es obligatorio']
     },
     advisor: {
-        type: String,
-        required: [true, 'El nombre del tutor es obligatorio'],
-        ref: 'advisors', // Referencia al modelo de tutores
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'advisors',
+        required: [true, 'El tutor es obligatorio'],
         index: true
     },
     abstract: {
@@ -73,6 +73,11 @@ const TfgSchema = new mongoose.Schema({
     downloadCount: {
         type: Number,
         default: 0
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        default: null
     }
 }, {
     timestamps: true,
@@ -131,7 +136,12 @@ TfgSchema.statics.search = function (query) {
 TfgSchema.statics.findPaginated = async function (query = {}, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-        this.find(query).skip(skip).limit(limit),
+        this.find(query)
+            .populate('year', 'year')
+            .populate('degree', 'degree')
+            .populate('advisor', 'advisor')
+            .skip(skip)
+            .limit(limit),
         this.countDocuments(query)
     ]);
 

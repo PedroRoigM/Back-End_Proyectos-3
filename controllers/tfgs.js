@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
  */
 const getTFGsNames = async (req, res) => {
     try {
-        const tfgs = await tfgService.getTFGNames();
+        const tfgs = await tfgService.getTFGsNames();
         createResponse(res, 200, tfgs);
     } catch (error) {
         logger.error('Error obteniendo nombres de TFGs', { error });
@@ -32,7 +32,7 @@ const getTFGsNames = async (req, res) => {
 const getTFGs = async (req, res) => {
     try {
         const filters = req.query;
-        const tfgs = await tfgService.getAllTFGs(filters);
+        const tfgs = await tfgService.getAll(filters);
         createResponse(res, 200, tfgs);
     } catch (error) {
         logger.error('Error obteniendo TFGs', { error, filters: req.query });
@@ -49,23 +49,23 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        let verified = false;
+        let isRestrictedUser = req.user && !["administrador", "coordinador"].includes(req.user.role);
+        // Primero verificar si el TFG existe sin filtros de verificación
+        const tfgExists = await tfgService.getTFGById(id, !isRestrictedUser);
 
-        // Solo mostrar TFGs verificados a usuarios normales
-        if (req.user && ["administrador", "coordinador"].includes(req.user.role)) {
-            verified = true;
+        if (!tfgExists) {
+            return createResponse(res, 404, { message: "TFG no encontrado" });
         }
 
-        const tfg = await tfgService.getTFGById(id, verified);
-
-        // Incrementa contador de visualizaciones (ignorar errores para que no afecte la respuesta principal)
-        try {
-            await tfgService.incrementTFGViews(id);
-        } catch (viewError) {
-            logger.warn(`No se pudo incrementar visitas para TFG ${id}`, { viewError });
+        // Agregar filtro de verificación para usuarios restringidos
+        if (isRestrictedUser && tfgExists.verified === false) {
+            return createResponse(res, 403, { message: "Acceso denegado a TFG no verificado" });
         }
+        // Incrementar las views
+        await tfgService.incrementTFGViews(id);
+        return createResponse(res, 200, tfgExists);
 
-        createResponse(res, 200, tfg);
+
     } catch (error) {
         logger.error(`Error obteniendo TFG ${req.params.id}`, { error });
         errorHandler(error, res);
@@ -81,7 +81,7 @@ const getTFG = async (req, res) => {
 const getNextTFGS = async (req, res) => {
     try {
         const { page_number } = req.params;
-        const filters = { ...req.query, ...req.body };
+        const filters = { ...req.query, ...req.matchedData };
 
         // Validar que page_number es un número válido
         const pageNumber = parseInt(page_number);
@@ -92,7 +92,7 @@ const getNextTFGS = async (req, res) => {
         const result = await tfgService.getPaginatedTFGs(filters, pageNumber);
         createResponse(res, 200, result);
     } catch (error) {
-        logger.error('Error obteniendo TFGs paginados', { error, page: req.params.page_number, filters: req.body });
+        logger.error('Error obteniendo TFGs paginados', { error, page: req.params.page_number, filters: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -105,7 +105,7 @@ const getNextTFGS = async (req, res) => {
  */
 const createTFG = async (req, res) => {
     try {
-        const tfgData = req.body;
+        const tfgData = req.matchedData;
 
         if (!tfgData || Object.keys(tfgData).length === 0) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -119,7 +119,7 @@ const createTFG = async (req, res) => {
             tfgData.keywords = tfgData.keywords.split(',').map(kw => kw.trim());
         }
 
-        const createdTFG = await tfgService.createTFG({
+        const createdTFG = await tfgService.create({
             ...tfgData,
             link: "undefined", // El link se actualizará después con el archivo
             createdBy: req.user._id
@@ -127,7 +127,7 @@ const createTFG = async (req, res) => {
 
         createResponse(res, 201, createdTFG);
     } catch (error) {
-        logger.error('Error creando TFG', { error, tfgData: req.body });
+        logger.error('Error creando TFG', { error, tfgData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -141,7 +141,7 @@ const createTFG = async (req, res) => {
 const putTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const updateData = req.matchedData;
 
         if (!updateData || Object.keys(updateData).length === 0) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -155,7 +155,7 @@ const putTFG = async (req, res) => {
             updateData.keywords = updateData.keywords.split(',').map(kw => kw.trim());
         }
 
-        const updatedTFG = await tfgService.updateTFG(id, updateData);
+        const updatedTFG = await tfgService.update(id, updateData);
         createResponse(res, 200, updatedTFG);
     } catch (error) {
         logger.error(`Error actualizando TFG ${req.params.id}`, { error });
@@ -181,7 +181,7 @@ const deleteTFG = async (req, res) => {
         }
 
         // Eliminar el TFG
-        await tfgService.deleteTFG(id);
+        await tfgService.delete(id);
 
         createResponse(res, 204);
     } catch (error) {
@@ -213,8 +213,9 @@ const patchFileTFG = async (req, res) => {
         }
 
         // Subir archivo y actualizar TFG
+
         const fileUrl = await fileService.uploadFile(fileBuffer, fileName);
-        const updatedTFG = await tfgService.updateTFGFile(id, fileUrl);
+        const updatedTFG = await tfgService.update(id, { link: fileUrl });
 
         createResponse(res, 200, updatedTFG);
     } catch (error) {
@@ -280,7 +281,7 @@ const getFileTFG = async (req, res) => {
 const getUnverifiedTFGs = async (req, res) => {
     try {
         const { page_number } = req.params;
-        const filters = { ...req.query, ...req.body, verified: false };
+        const filters = { ...req.query, ...req.matchedData, verified: false };
 
         // Validar que page_number es un número válido
         const pageNumber = parseInt(page_number);

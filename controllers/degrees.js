@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
 const getDegrees = async (req, res) => {
     try {
         const onlyActive = req.query.active === 'true';
-        const degrees = await degreeService.getAllDegrees(onlyActive);
+        const degrees = await degreeService.getAll(onlyActive);
         createResponse(res, 200, degrees);
     } catch (error) {
         logger.error('Error obteniendo grados académicos', { error });
@@ -32,7 +32,7 @@ const getDegrees = async (req, res) => {
 const getDegree = async (req, res) => {
     try {
         const { id } = req.params;
-        const degree = await degreeService.getDegreeById(id);
+        const degree = await degreeService.getById(id);
         createResponse(res, 200, degree);
     } catch (error) {
         logger.error(`Error obteniendo grado académico ${req.params.id}`, { error });
@@ -48,22 +48,16 @@ const getDegree = async (req, res) => {
  */
 const createDegree = async (req, res) => {
     try {
-        const degreeData = req.matchedData || req.body;
+        const degreeData = req.matchedData;
 
         if (!degreeData || !degreeData.degree) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        // Verificar si ya existe un grado con el mismo nombre
-        const existingDegree = await degreeService.findDegreeByName(degreeData.degree);
-        if (existingDegree) {
-            return errorHandler(new Error('DEGREE_ALREADY_EXISTS'), res);
-        }
-
-        const createdDegree = await degreeService.createDegree(degreeData);
+        const createdDegree = await degreeService.create(degreeData);
         createResponse(res, 201, createdDegree);
     } catch (error) {
-        logger.error('Error creando grado académico', { error, degreeData: req.body });
+        logger.error('Error creando grado académico', { error, degreeData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -77,30 +71,16 @@ const createDegree = async (req, res) => {
 const updateDegree = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const updateData = req.matchedData;
 
         if (!updateData || Object.keys(updateData).length === 0) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        // Verificar que el grado existe
-        const degree = await degreeService.getDegreeById(id);
-        if (!degree) {
-            return errorHandler(new Error('DEGREE_NOT_FOUND'), res);
-        }
-
-        // Si se está actualizando el nombre, verificar que no exista otro con ese nombre
-        if (updateData.degree) {
-            const existingDegree = await degreeService.findDegreeByName(updateData.degree);
-            if (existingDegree && existingDegree._id.toString() !== id) {
-                return errorHandler(new Error('DEGREE_ALREADY_EXISTS'), res);
-            }
-        }
-
-        const updatedDegree = await degreeService.updateDegree(id, updateData);
+        const updatedDegree = await degreeService.update(id, updateData);
         createResponse(res, 200, updatedDegree);
     } catch (error) {
-        logger.error(`Error actualizando grado académico ${req.params.id}`, { error, updateData: req.body });
+        logger.error(`Error actualizando grado académico ${req.params.id}`, { error, updateData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -114,31 +94,36 @@ const updateDegree = async (req, res) => {
 const deleteDegree = async (req, res) => {
     try {
         const { id } = req.params;
-
-        // Verificar que el grado existe
-        const degree = await degreeService.getDegreeById(id);
-        if (!degree) {
-            return errorHandler(new Error('DEGREE_NOT_FOUND'), res);
-        }
-
-        // Verificar si el grado está asociado a TFGs
-        const isUsed = await degreeService.isDegreeUsedInTFGs(id);
-        if (isUsed) {
-            return errorHandler(new Error('DEGREE_IN_USE'), res);
-        }
-
-        const deletedDegree = await degreeService.deleteDegree(id);
-        createResponse(res, 200, deletedDegree);
+        const response = await degreeService.delete(id);
+        createResponse(res, 200, response);
     } catch (error) {
         logger.error(`Error eliminando grado académico ${req.params.id}`, { error });
         errorHandler(error, res);
     }
 };
 
+/**
+ * Obtener grados académicos por el nombre
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getDegreesByName = async (req, res) => {
+    try {
+        const degree = req.matchedData;
+        const result = await degreeService.findByName(degree.degree);
+        createResponse(res, 200, result);
+    } catch (error) {
+        logger.error(`Error obteniendo grados académicos por nombre ${req.params.name}`, { error });
+        errorHandler(error, res);
+    }
+}
+
 module.exports = {
     getDegrees,
     getDegree,
     createDegree,
     updateDegree,
-    deleteDegree
+    deleteDegree,
+    getDegreesByName
 };

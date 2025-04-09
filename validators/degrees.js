@@ -1,49 +1,32 @@
-const { check } = require("express-validator");
+const { validateMongoId } = require('./base');
+const { check } = require('express-validator');
 const validateResults = require('../utils/handleValidator');
 
-const validateIdMongo = [
-    check("id")
-        .isMongoId().withMessage("El ID proporcionado no es válido"),
-    (req, res, next) => validateResults(req, res, next)
-];
-
-const validateDegree = [
+const validateDegreeFields = [
     check("degree")
-        .isString().withMessage("El campo 'degree' debe ser un string")
-        .notEmpty().withMessage("El campo 'degree' no puede estar vacío")
-        .isLength({ min: 3, max: 100 }).withMessage("El nombre del grado debe tener entre 3 y 100 caracteres"),
-    check("abbreviation")
+        .exists().withMessage('El nombre del tutor es obligatorio')
+        .isString().withMessage('El nombre del tutor debe ser una cadena de texto')
+        .isLength({ min: 3, max: 100 }).withMessage('El nombre del tutor debe tener entre 3 y 100 caracteres'),
+    check("abreviation")
         .optional()
-        .isString().withMessage("El campo 'abbreviation' debe ser un string"),
-    check("faculty")
-        .optional()
-        .isString().withMessage("El campo 'faculty' debe ser un string"),
+        .isString().withMessage('La abreviatura debe ser una cadena de texto')
+        .isLength({ max: 10 }).withMessage('La abreviatura no debe exceder 10 caracteres'),
     check("active")
         .optional()
-        .isBoolean().withMessage("El campo 'active' debe ser un valor booleano"),
+        .isBoolean().withMessage('El estado activo debe ser un valor booleano')
+        .isIn([true, false]).withMessage('El estado activo debe ser verdadero o falso'),
     (req, res, next) => validateResults(req, res, next)
 ];
 
-const validateUpdateDegree = [
+const validateSearchDegree = [
     check("degree")
-        .optional()
-        .isString().withMessage("El campo 'degree' debe ser un string")
-        .notEmpty().withMessage("El campo 'degree' no puede estar vacío")
-        .isLength({ min: 3, max: 100 }).withMessage("El nombre del grado debe tener entre 3 y 100 caracteres"),
-    check("abbreviation")
-        .optional()
-        .isString().withMessage("El campo 'abbreviation' debe ser un string"),
-    check("faculty")
-        .optional()
-        .isString().withMessage("El campo 'faculty' debe ser un string"),
-    check("active")
-        .optional()
-        .isBoolean().withMessage("El campo 'active' debe ser un valor booleano"),
+        .exists().withMessage('El nombre del tutor es obligatorio')
+        .isString().withMessage('El nombre del tutor debe ser una cadena de texto')
+        .isLength({ min: 3, max: 100 }).withMessage('El nombre del tutor debe tener entre 3 y 100 caracteres'),
     (req, res, next) => validateResults(req, res, next)
 ];
-
 module.exports = {
-    validateIdMongo,
-    validateDegree,
-    validateUpdateDegree
+    validateIdMongo: validateMongoId(),
+    validateDegreeFields,
+    validateSearchDegree
 };

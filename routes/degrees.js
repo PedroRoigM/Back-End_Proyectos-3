@@ -9,12 +9,13 @@ const {
     getDegree,
     createDegree,
     deleteDegree,
-    updateDegree
+    updateDegree,
+    getDegreesByName
 } = require('../controllers/degrees');
 const {
     validateIdMongo,
-    validateDegree,
-    validateUpdateDegree
+    validateDegreeFields,
+    validateSearchDegree
 } = require('../validators/degrees');
 const authMiddleware = require('../middleware/session');
 const checkRole = require('../middleware/role');
@@ -34,8 +35,9 @@ router.get('/:id', authMiddleware, validateIdMongo, getDegree);
  * Rutas de creación y modificación
  * Restringidas a administradores
  */
-router.post('/', authMiddleware, checkRole(adminRole), validateDegree, createDegree);
-router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateUpdateDegree, updateDegree);
+router.post('/', authMiddleware, checkRole(adminRole), validateDegreeFields, createDegree);
+router.post('/name', authMiddleware, validateSearchDegree, getDegreesByName);
+router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateDegreeFields, updateDegree);
 
 /**
  * Rutas de eliminación

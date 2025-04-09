@@ -14,7 +14,7 @@ const logger = require('../utils/logger');
  */
 const getAdvisors = async (req, res) => {
     try {
-        const advisors = await advisorService.getAllAdvisors();
+        const advisors = await advisorService.getAll();
         createResponse(res, 200, advisors);
     } catch (error) {
         logger.error('Error obteniendo tutores', { error });
@@ -30,22 +30,15 @@ const getAdvisors = async (req, res) => {
  */
 const createAdvisor = async (req, res) => {
     try {
-        const advisorData = req.matchedData || req.body;
-
+        const advisorData = req.matchedData;
         if (!advisorData || !advisorData.advisor) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        // Verificar si ya existe un tutor con el mismo nombre
-        const existingAdvisor = await advisorService.findAdvisorByName(advisorData.advisor);
-        if (existingAdvisor) {
-            return errorHandler(new Error('ADVISOR_ALREADY_EXISTS'), res);
-        }
-
-        const createdAdvisor = await advisorService.createAdvisor(advisorData);
+        const createdAdvisor = await advisorService.create(advisorData);
         createResponse(res, 201, createdAdvisor);
     } catch (error) {
-        logger.error('Error creando tutor', { error, advisorData: req.body });
+        logger.error('Error creando tutor', { error, advisorData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -59,30 +52,16 @@ const createAdvisor = async (req, res) => {
 const updateAdvisor = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const updateData = req.matchedData;
 
         if (!updateData || Object.keys(updateData).length === 0) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        // Si se está actualizando el nombre, verificar que no exista otro tutor con ese nombre
-        if (updateData.advisor) {
-            const existingAdvisor = await advisorService.findAdvisorByName(updateData.advisor);
-            if (existingAdvisor && existingAdvisor._id.toString() !== id) {
-                return errorHandler(new Error('ADVISOR_ALREADY_EXISTS'), res);
-            }
-        }
-
-        // Verificar que el tutor existe
-        const advisor = await advisorService.getAdvisorById(id);
-        if (!advisor) {
-            return errorHandler(new Error('ADVISOR_NOT_FOUND'), res);
-        }
-
-        const updatedAdvisor = await advisorService.updateAdvisor(id, updateData);
+        const updatedAdvisor = await advisorService.update(id, updateData);
         createResponse(res, 200, updatedAdvisor);
     } catch (error) {
-        logger.error(`Error actualizando tutor ${req.params.id}`, { error, updateData: req.body });
+        logger.error(`Error actualizando tutor ${req.params.id}`, { error, updateData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -97,20 +76,8 @@ const deleteAdvisor = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Verificar que el tutor existe
-        const advisor = await advisorService.getAdvisorById(id);
-        if (!advisor) {
-            return errorHandler(new Error('ADVISOR_NOT_FOUND'), res);
-        }
-
-        // Verificar si el tutor está asociado a TFGs
-        const isUsed = await advisorService.isAdvisorUsedInTFGs(id);
-        if (isUsed) {
-            return errorHandler(new Error('ADVISOR_IN_USE'), res);
-        }
-
-        const deletedAdvisor = await advisorService.deleteAdvisor(id);
-        createResponse(res, 200, deletedAdvisor);
+        const response = await advisorService.delete(id);
+        createResponse(res, 200, response);
     } catch (error) {
         logger.error(`Error eliminando tutor ${req.params.id}`, { error });
         errorHandler(error, res);
@@ -126,7 +93,7 @@ const deleteAdvisor = async (req, res) => {
 const getAdvisor = async (req, res) => {
     try {
         const { id } = req.params;
-        const advisor = await advisorService.getAdvisorById(id);
+        const advisor = await advisorService.getById(id);
         createResponse(res, 200, advisor);
     } catch (error) {
         logger.error(`Error obteniendo tutor ${req.params.id}`, { error });
@@ -134,10 +101,27 @@ const getAdvisor = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene un tutor por su Nombre
+ * @async
+ * @param {Object} req - Objeto de petición Express
+ * @param {Object} res - Objeto de respuesta Express
+ */
+const getAdvisorsByName = async (req, res) => {
+    try {
+        const advisor = req.matchedData;
+        const result = await advisorService.findByName(advisor.advisor);
+        createResponse(res, 200, result);
+    } catch (error) {
+        logger.error(`Error obteniendo tutor por nombre ${req.params.name}`, { error });
+        errorHandler(error, res);
+    }
+};
 module.exports = {
     getAdvisors,
     getAdvisor,
     createAdvisor,
     updateAdvisor,
-    deleteAdvisor
+    deleteAdvisor,
+    getAdvisorsByName
 };

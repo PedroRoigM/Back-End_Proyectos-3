@@ -1,5 +1,5 @@
 
-@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2YzN2Q1ZDAzZDU4OTg2ODJhNjBjYWYiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQ0MDEwNTkxLCJleHAiOjE3NDUyMjAxOTF9.K2FBv277mwDIxlww2t-mdIa2Z2ROde0ZtgH7-gcvpC0
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2Y2YTBlNGVlMTM2YTM4ZWRjYmMwNTkiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQ0MjE2MjkyLCJleHAiOjE3NDU0MjU4OTJ9.xpjMEXszrgOmMWDjR50IeSawe4nmlOgvNy_VlXyx8vg
 
 GET https://api-937n.onrender.com/api/users
 
@@ -34,7 +34,7 @@ Authorization: {{authToken}}
 Content-Type: application/json
 
 {
-    "code": "194127"
+    "code": "760996"
 }
 
 ###
@@ -288,9 +288,41 @@ Content-Type: application/json
 }
 
 ### 
-GET http://localhost:3000/api/years/67f12f241fff67f817a4ebb4
+POST  http://localhost:3000/api/tfgs
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+    "year": "67f12e6a1fff67f817a4ebae",
+    "degree": "67f12f241fff67f817a4ebb8",
+    "student": "Eduardo Rodriguez",
+    "tfgTitle": "Prueba de TFG",
+    "keywords": [
+        "prueba"
+    ],
+    "advisor": "67f12bf4dcda0fcf8fb670eb",
+    "abstract": "esto es una prueba que tiene que tener al menos 100 caracteres, por lo que tengo que seguir escribiendo un poquito más"
+}
+
+###
+PATCH http://localhost:3000/api/tfgs/pdf/67f5553c2d8e38118ed7e9b8
+Authorization: {{authToken}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="file2.pdf"
+Content-Type: application/pdf
+
+< ./file2.pdf
+--boundary--
+
+###
+GET http://localhost:3000/api/years
 Authorization: {{authToken}}
 
+###
+GET http://localhost:3000/api/tfgs/67f5553c2d8e38118ed7e9b8
+Authorization: {{authToken}}
 ### Recuperar contraseña
 POST http://localhost:3000/api/users/recover-password
 Content-Type: application/json
@@ -298,3 +330,38 @@ Content-Type: application/json
 {
     "email": "pedro.roig@live.u-tad.com"
 }
+
+### Crear un nuevo usuario
+POST http://localhost:3000/api/users/register
+Content-Type: application/json
+
+{
+    "name": "Example",
+    "email": "ped.roi@live.u-tad.com",
+    "password": "123456789"
+}
+###
+@exampleToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2Y1NTc4YTc0YzU3ZjQ3OWE3MmJmNzAiLCJyb2xlIjoidXN1YXJpbyIsInZlcmlmaWVkIjpmYWxzZSwiaWF0IjoxNzQ0MTMxOTgwLCJleHAiOjE3NDUzNDE1ODB9.i-f6X0uVziHX7k12OMTKOvOcFDAmuunluGPSjzTEfhs
+
+### Validar el usuario creado
+POST http://localhost:3000/api/users/validate
+Authorization: {{exampleToken}}
+Content-Type: application/json
+
+{
+    "code": "336589"
+}
+
+### 
+POST http://localhost:3000/api/degrees/name
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+    "degree": "software"
+}
+
+
+###
+GET http://localhost:3000/api/tfgs/67f612e1b3e90997a1a76b02
+Authorization: {{authToken}}

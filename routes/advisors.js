@@ -11,12 +11,13 @@ const {
     getAdvisor,
     createAdvisor,
     deleteAdvisor,
-    updateAdvisor
+    updateAdvisor,
+    getAdvisorsByName
 } = require('../controllers/advisors');
 const {
+    validateAdvisorFields,
     validateIdMongo,
-    validateCreateAdvisor,
-    validateUpdateAdvisor
+    validateSearchAdvisor
 } = require('../validators/advisors');
 
 /**
@@ -34,8 +35,9 @@ router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
  * Rutas de creación y modificación
  * Restringidas a administradores y coordinadores
  */
-router.post('/', authMiddleware, checkRole(adminRoles), validateCreateAdvisor, createAdvisor);
-router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateUpdateAdvisor, updateAdvisor);
+router.post('/', authMiddleware, checkRole(adminRoles), validateAdvisorFields, createAdvisor);
+router.post('/name', authMiddleware, validateSearchAdvisor, getAdvisorsByName);
+router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateAdvisorFields, updateAdvisor);
 
 /**
  * Rutas de eliminación

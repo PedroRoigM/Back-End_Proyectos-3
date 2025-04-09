@@ -65,20 +65,17 @@ const searchUsers = async (req, res) => {
  */
 const registerCtrl = async (req, res) => {
     try {
-        const userData = req.matchedData || req.body;
+        const userData = req.matchedData;
 
         if (!userData || !userData.email || !userData.password || !userData.name) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
-        const { user, token, verificationCode } = await userService.registerUser(userData);
-
-        // Aquí iría la lógica para enviar el código por email
-        // await emailService.sendVerificationCode(user.email, verificationCode);
+        const { user, token } = await userService.registerUser(userData);
 
         createResponse(res, 201, { token, user });
     } catch (error) {
-        logger.error('Error registrando usuario', { error, userData: req.body });
+        logger.error('Error registrando usuario', { error, userData: req.matchedData });
         errorHandler(error, res);
     }
 };
@@ -91,7 +88,7 @@ const registerCtrl = async (req, res) => {
  */
 const loginCtrl = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password } = req.matchedData;
 
         if (!email || !password) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -100,7 +97,7 @@ const loginCtrl = async (req, res) => {
         const { user, token } = await userService.loginUser(email, password);
         createResponse(res, 200, { token, user });
     } catch (error) {
-        logger.error('Error en login', { error, email: req.body.email });
+        logger.error('Error en login', { error, email: req.matchedData.email });
         errorHandler(error, res);
     }
 };
@@ -114,7 +111,7 @@ const loginCtrl = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.matchedData || req.body;
+        const updateData = req.matchedData || req.matchedData;
 
         if (!updateData || Object.keys(updateData).length === 0) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -146,7 +143,7 @@ const updateUser = async (req, res) => {
 const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
-        const { role } = req.body;
+        const { role } = req.matchedData;
         // Si el id es el mismo que el del usuario autenticado, no se puede cambiar el rol
         if (req.user._id.toString() === id) {
             return errorHandler(new Error('UNAUTHORIZED_ACTION'), res);
@@ -166,7 +163,7 @@ const updateRole = async (req, res) => {
         const updatedUser = await userService.updateUser(id, { role });
         createResponse(res, 200, updatedUser);
     } catch (error) {
-        logger.error(`Error actualizando rol de usuario ${req.params.id}`, { error, role: req.body.role });
+        logger.error(`Error actualizando rol de usuario ${req.params.id}`, { error, role: req.matchedData.role });
         errorHandler(error, res);
     }
 };
@@ -205,7 +202,7 @@ const deleteUser = async (req, res) => {
  */
 const validateUser = async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code } = req.matchedData;
 
         if (!code) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -227,20 +224,15 @@ const validateUser = async (req, res) => {
  */
 const requestRecoverPassword = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email } = req.matchedData;
 
         if (!email) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
-
         await userService.requestPasswordRecovery(email);
-
-        // Aquí iría la lógica para enviar el código por email
-        // await emailService.sendPasswordRecoveryCode(email, verificationCode);
-
         createResponse(res, 200, { message: 'Código enviado al email' });
     } catch (error) {
-        logger.error('Error solicitando recuperación de contraseña', { error, email: req.body.email });
+        logger.error('Error solicitando recuperación de contraseña', { error, email: req.matchedData.email });
         errorHandler(error, res);
     }
 };
@@ -253,7 +245,7 @@ const requestRecoverPassword = async (req, res) => {
  */
 const recoverPassword = async (req, res) => {
     try {
-        const { email, code, password } = req.body;
+        const { email, code, password } = req.matchedData;
 
         if (!email || !code || !password) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
@@ -262,7 +254,7 @@ const recoverPassword = async (req, res) => {
         await userService.recoverPassword(email, code, password);
         createResponse(res, 200, { message: 'Contraseña restablecida correctamente' });
     } catch (error) {
-        logger.error('Error recuperando contraseña', { error, email: req.body.email });
+        logger.error('Error recuperando contraseña', { error, email: req.matchedData.email });
         errorHandler(error, res);
     }
 };
