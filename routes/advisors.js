@@ -17,7 +17,8 @@ const {
 const {
     validateAdvisorFields,
     validateIdMongo,
-    validateSearchAdvisor
+    validateSearchAdvisor,
+    validateChangeActive
 } = require('../validators/advisors');
 
 /**
@@ -37,7 +38,7 @@ router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
  */
 router.post('/', authMiddleware, checkRole(adminRoles), validateAdvisorFields, createAdvisor);
 router.post('/name', authMiddleware, validateSearchAdvisor, getAdvisorsByName);
-router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateAdvisorFields, updateAdvisor);
+router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateChangeActive, updateAdvisor);
 
 /**
  * Rutas de eliminación

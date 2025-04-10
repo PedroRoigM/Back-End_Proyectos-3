@@ -16,7 +16,8 @@ const {
 const {
     validateIdMongo,
     validateYearFields,
-    validateSearchYear
+    validateSearchYear,
+    validateChangeActive
 } = require('../validators/years');
 const authMiddleware = require('../middleware/session');
 const checkRole = require('../middleware/role');
@@ -39,7 +40,7 @@ router.get('/:id', authMiddleware, validateIdMongo, getYear);
  */
 router.post('/', authMiddleware, checkRole(adminRole), createYear);
 router.post('/name', authMiddleware, validateSearchYear, getYearsByName);
-router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateYearFields, updateYear);
+router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateChangeActive, updateYear);
 
 /**
  * Rutas de eliminación

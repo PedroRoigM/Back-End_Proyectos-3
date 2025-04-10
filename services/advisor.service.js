@@ -1,6 +1,5 @@
-const { advisorsModel, tfgsModel } = require('../models');
+const { advisorsModel } = require('../models');
 const BaseService = require('./base.service');
-const logger = require('../utils/logger');
 
 class AdvisorService extends BaseService {
     constructor() {
@@ -9,3 +8,6 @@ class AdvisorService extends BaseService {
 }
 
 module.exports = new AdvisorService();
+
+
+

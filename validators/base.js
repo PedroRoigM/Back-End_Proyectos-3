@@ -6,7 +6,13 @@ const validateMongoId = (paramName = 'id') => [
         .isMongoId().withMessage(`El ${paramName} proporcionado no es válido`),
     (req, res, next) => validateResults(req, res, next)
 ];
+const validateChangeActive = [
+    check("active")
+        .isBoolean().withMessage('El estado activo debe ser un valor booleano'),
+    (req, res, next) => validateResults(req, res, next)
+]
 
 module.exports = {
-    validateMongoId
+    validateMongoId,
+    validateChangeActive,
 };

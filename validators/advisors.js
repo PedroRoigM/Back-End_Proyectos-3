@@ -1,4 +1,4 @@
-const { validateMongoId } = require('./base');
+const { validateMongoId, validateChangeActive } = require('./base');
 const { check } = require('express-validator');
 const validateResults = require('../utils/handleValidator');
 const validateAdvisorFields = [
@@ -20,8 +20,11 @@ const validateSearchAdvisor = [
         .isLength({ min: 3, max: 100 }).withMessage('El nombre del tutor debe tener entre 3 y 100 caracteres'),
     (req, res, next) => validateResults(req, res, next)
 ];
+
+
 module.exports = {
     validateIdMongo: validateMongoId(),
     validateAdvisorFields,
-    validateSearchAdvisor
+    validateSearchAdvisor,
+    validateChangeActive: validateChangeActive,
 };
