@@ -67,11 +67,13 @@ class TfgService extends BaseService {
      */
     async getTFGById(id, allowUnverified = false) {
         try {
-            const tfg = await this.model.findById(id)
-                .where('year').ne(null)
-                .where('degree').ne(null)
-                .where('advisor').ne(null)
-                .where('link').ne(null)
+            const tfg = await this.model.findOne({
+                _id: id,
+                year: { $ne: null },
+                degree: { $ne: null },
+                advisor: { $ne: null },
+                link: { $ne: null }
+            })
                 .populate({ path: 'year', select: 'year' })
                 .populate({ path: 'degree', select: 'degree' })
                 .populate({ path: 'advisor', select: 'advisor' })
@@ -136,17 +138,16 @@ class TfgService extends BaseService {
             }
 
             const skip = (page - 1) * pageSize;
-
+            query = {
+                ...query, year: { $ne: null },
+                degree: { $ne: null },
+                advisor: { $ne: null },
+                link: { $ne: null }
+            };
             // Consulta principal
             const [tfgs, totalTFGs] = await Promise.all([
                 this.model.find(query)
-                    .where('year').ne(null)
-                    .where('degree').ne(null)
-                    .where('advisor').ne(null)
-                    .where('link').ne(null)
-                    .populate('year', 'year')
-                    .populate('degree', 'degree')
-                    .populate('advisor', 'advisor')
+
                     .skip(skip)
                     .limit(pageSize)
                     .select('year degree student tfgTitle keywords advisor abstract'),

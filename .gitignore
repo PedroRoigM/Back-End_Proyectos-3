@@ -2,3 +2,5 @@
 .env.test
 node_modules/
 test/
+test/index.http
+/test

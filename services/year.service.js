@@ -18,9 +18,11 @@ class YearService extends BaseService {
         try {
             // Generar los datos del año académico actual
             const yearData = await this.getCurrentYear();
+            ;
             // Verificar si ya existe un año con ese nombre
             const existingYear = await this.findByName(yearData.year);
-            if (existingYear) {
+            console.log(existingYear);
+            if (existingYear.leght > 0) {
                 throw new Error('YEAR_ALREADY_EXISTS');
             }
 

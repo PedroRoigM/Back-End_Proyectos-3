@@ -202,18 +202,20 @@ class BaseService {
      */
     async delete(id) {
         try {
+            let isInUse = false;
             // Verificar si la entidad está siendo usada en algún TFG
             if (['advisor', 'degree', 'year'].includes(this.entityName)) {
-                const isInUse = await this.isUsedInTFGs(id);
+                isInUse = await this.isUsedInTFGs(id);
                 if (isInUse) {
                     throw new Error(this.ERRORS.IN_USE);
                 }
             } else {
                 throw new Error('INVALID_ENTITY_NAME');
             }
+            if (!isInUse) {
+                await this.model.findByIdAndDelete(id);
+            }
 
-
-            await this.model.findByIdAndDelete(id);
 
             // Devolver un ACK
             return { message: `${this.entityName} eliminado` };
@@ -252,13 +254,14 @@ class BaseService {
                     query[this.entityName] = entity._id;
             }
 
-            const count = await tfgsModel.countDocuments(query);
+            const count = await this.tfgsModel.countDocuments(query);
             return count > 0;
         } catch (error) {
             if (error.message === this.ERRORS.NOT_FOUND || error.message === 'INVALID_ID') {
                 return false;
             }
             this._handleError(error, 'isUsedInTFGs', id);
+            return false;
         }
     }
 
