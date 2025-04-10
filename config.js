@@ -6,5 +6,8 @@ module.exports = {
     PINATA_API_KEY: process.env.PINATA_KEY,
     PINATA_SECRET_KEY: process.env.PINATA_SECRET,
     PINATA_GATEWAY_URL: process.env.PINATA_GATEWAY_URL,
-    SHAREPOINT_URL: process.env.SHARE_POINT_URL,
+    JWT_SECRET: process.env.JWT_SECRET,
+    REFRESH_TOKEN: process.env.REFRESH_TOKEN,
+    ACCESS_TOKEN: process.env.ACCESS_TOKEN,
+    EMAIL: process.env.EMAIL,
 };

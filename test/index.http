@@ -353,10 +353,10 @@ Content-Type: application/json
 }
 
 ### 
-GET http://localhost:3000/api/tfgs/names
+POST http://localhost:3000/api/tfgs/pages/1
 Authorization: {{authToken}}
 
 
 ###
-GET http://localhost:3000/api/tfgs/67f612e1b3e90997a1a76b02
+GET http://localhost:3000/api/degrees
 Authorization: {{authToken}}

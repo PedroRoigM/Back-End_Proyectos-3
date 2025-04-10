@@ -89,8 +89,7 @@ class BaseService {
      */
     async getAll(filter = {}, select = '') {
         try {
-            let query = this.model.find(filter);
-
+            let query = this.model.find({ [this.entityName]: { $ne: null } }, filter).select(`${this.entityName} active`);
             if (select) {
                 query = query.select(select);
             }
@@ -111,7 +110,7 @@ class BaseService {
      */
     async getById(id, filters = {}, select = null) {
         try {
-            let query = this.model.findById(id, filters);
+            let query = this.model.findById(id, filters).select(`${this.entityName} active`);
 
             if (select !== null) {
                 query = query.select(select);
@@ -147,7 +146,7 @@ class BaseService {
                 query[field] = { $regex: value };
             }
 
-            return await this.model.findOne(query);
+            return await this.model.findOne(query).select(`${this.entityName} active`);
         } catch (error) {
             this._handleError(error, 'findByField', null, { field, value, options });
         }
