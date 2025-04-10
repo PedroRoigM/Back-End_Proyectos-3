@@ -42,11 +42,16 @@ class TfgService extends BaseService {
 
             if (filters.verified !== undefined) query.verified = filters.verified;
 
-            return await this.model.find(query)
-                .populate('year', 'year')
-                .populate('degree', 'degree')
-                .populate('advisor', 'advisor')
-                .populate('verifiedBy', 'name');
+            return await this.model.findById(id)
+                .where('year').ne(null)
+                .where('degree').ne(null)
+                .where('advisor').ne(null)
+                .where('link').ne(null)
+                .populate({ path: 'year', select: 'year' })
+                .populate({ path: 'degree', select: 'degree' })
+                .populate({ path: 'advisor', select: 'advisor' })
+                .populate({ path: 'verifiedBy', select: 'name' })
+                .select('year degree student tfgTitle keywords advisor abstract verified');
         } catch (error) {
             this._handleError(error, 'getAllTFGs', null, filters);
         }
@@ -63,12 +68,15 @@ class TfgService extends BaseService {
     async getTFGById(id, allowUnverified = false) {
         try {
             const tfg = await this.model.findById(id)
+                .where('year').ne(null)
+                .where('degree').ne(null)
+                .where('advisor').ne(null)
+                .where('link').ne(null)
                 .populate({ path: 'year', select: 'year' })
                 .populate({ path: 'degree', select: 'degree' })
                 .populate({ path: 'advisor', select: 'advisor' })
                 .populate({ path: 'verifiedBy', select: 'name' })
                 .select('year degree student tfgTitle keywords advisor abstract verified');
-
             if (!tfg) {
                 throw new Error(this.ERRORS.NOT_FOUND);
             }
@@ -132,6 +140,10 @@ class TfgService extends BaseService {
             // Consulta principal
             const [tfgs, totalTFGs] = await Promise.all([
                 this.model.find(query)
+                    .where('year').ne(null)
+                    .where('degree').ne(null)
+                    .where('advisor').ne(null)
+                    .where('link').ne(null)
                     .populate('year', 'year')
                     .populate('degree', 'degree')
                     .populate('advisor', 'advisor')
