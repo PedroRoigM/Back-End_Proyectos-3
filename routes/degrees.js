@@ -16,7 +16,7 @@ const {
     validateIdMongo,
     validateDegreeFields,
     validateSearchDegree,
-    validateChangeActive
+    validateIsActive
 } = require('../validators/degrees');
 const authMiddleware = require('../middleware/session');
 const checkRole = require('../middleware/role');
@@ -29,7 +29,7 @@ const adminRole = ["administrador"];
 /**
  * Rutas de consulta
  */
-router.get('/', authMiddleware, getDegrees);
+router.get('/', authMiddleware, validateIsActive, getDegrees);
 router.get('/:id', authMiddleware, validateIdMongo, getDegree);
 
 /**
@@ -38,7 +38,7 @@ router.get('/:id', authMiddleware, validateIdMongo, getDegree);
  */
 router.post('/', authMiddleware, checkRole(adminRole), validateDegreeFields, createDegree);
 router.post('/name', authMiddleware, validateSearchDegree, getDegreesByName);
-router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateChangeActive, updateDegree);
+router.patch('/:id', authMiddleware, checkRole(adminRole), validateIdMongo, validateIsActive, updateDegree);
 
 /**
  * Rutas de eliminación

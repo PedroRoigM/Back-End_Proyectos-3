@@ -87,12 +87,12 @@ class BaseService {
      * @param {string} [select] - Campos a seleccionar
      * @returns {Promise<Array>} Lista de entidades
      */
-    async getAll(filter = {}, select = '') {
+    async getAll(filter = {}, select = `${this.entityName} active`) {
         try {
-            let query = this.model.find({ [this.entityName]: { $ne: null } }, filter).select(`${this.entityName} active`);
-            if (select) {
-                query = query.select(select);
-            }
+            filter = {
+                ...filter, [this.entityName]: { $ne: null }
+            };
+            let query = this.model.find(filter).select(select);
 
             return await query.exec();
         } catch (error) {

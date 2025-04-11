@@ -1,4 +1,4 @@
-const { validateMongoId, validateChangeActive } = require('./base');
+const { validateMongoId, validateIsActive } = require('./base');
 const { check } = require('express-validator');
 const validateResults = require('../utils/handleValidator');
 
@@ -29,5 +29,5 @@ module.exports = {
     validateIdMongo: validateMongoId(),
     validateDegreeFields,
     validateSearchDegree,
-    validateChangeActive: validateChangeActive,
+    validateIsActive: validateIsActive,
 };

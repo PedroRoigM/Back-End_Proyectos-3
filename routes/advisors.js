@@ -18,7 +18,7 @@ const {
     validateAdvisorFields,
     validateIdMongo,
     validateSearchAdvisor,
-    validateChangeActive
+    validateIsActive
 } = require('../validators/advisors');
 
 /**
@@ -29,7 +29,7 @@ const adminRoles = ['administrador', 'coordinador'];
 /**
  * Rutas de consulta
  */
-router.get('/', authMiddleware, getAdvisors);
+router.get('/', authMiddleware, validateIsActive, getAdvisors);
 router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
 
 /**
@@ -38,7 +38,7 @@ router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
  */
 router.post('/', authMiddleware, checkRole(adminRoles), validateAdvisorFields, createAdvisor);
 router.post('/name', authMiddleware, validateSearchAdvisor, getAdvisorsByName);
-router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateChangeActive, updateAdvisor);
+router.patch('/:id', authMiddleware, checkRole(adminRoles), validateIdMongo, validateIsActive, updateAdvisor);
 
 /**
  * Rutas de eliminación

@@ -14,7 +14,12 @@ const logger = require('../utils/logger');
  */
 const getAdvisors = async (req, res) => {
     try {
-        const advisors = await advisorService.getAll();
+        const active = req.matchedData;
+        let advisors
+        if (active)
+            advisors = await advisorService.getAll(active);
+        else
+            advisors = await advisorService.getAll();
         createResponse(res, 200, advisors);
     } catch (error) {
         logger.error('Error obteniendo tutores', { error });

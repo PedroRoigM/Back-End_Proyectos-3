@@ -14,7 +14,13 @@ const logger = require('../utils/logger');
  */
 const getYears = async (req, res) => {
     try {
-        years = await yearService.getAll();
+        const active = req.matchedData;
+        let years;
+        if (active) {
+            years = await yearService.getAll(active);
+        } else {
+            years = await yearService.getAll();
+        }
         createResponse(res, 200, years);
     } catch (error) {
         logger.error('Error obteniendo años académicos', { error });
