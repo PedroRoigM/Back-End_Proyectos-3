@@ -29,7 +29,7 @@ const adminRoles = ['administrador', 'coordinador'];
 /**
  * Rutas de consulta
  */
-router.get('/', authMiddleware, validateIsActive, getAdvisors);
+router.post('/get', authMiddleware, validateIsActive, getAdvisors);
 router.get('/:id', authMiddleware, validateIdMongo, getAdvisor);
 
 /**

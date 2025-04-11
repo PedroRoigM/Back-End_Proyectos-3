@@ -29,7 +29,7 @@ const adminRole = ["administrador"];
 /**
  * Rutas de consulta
  */
-router.get('/', authMiddleware, validateIsActive, getDegrees);
+router.post('/get', authMiddleware, validateIsActive, getDegrees);
 router.get('/:id', authMiddleware, validateIdMongo, getDegree);
 
 /**
