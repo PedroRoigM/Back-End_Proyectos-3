@@ -92,7 +92,7 @@ class BaseService {
             filter = {
                 ...filter, [this.entityName]: { $ne: null }
             };
-            let query = this.model.find(filter).select(select);
+            let query = this.model.find(filter).select(select).sort({ [this.entityName]: 1 });
 
             return await query.exec();
         } catch (error) {
