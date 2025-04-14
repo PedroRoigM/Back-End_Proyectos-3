@@ -19,6 +19,7 @@ class BaseService {
         this.model = model;
         this.entityName = entityName;
         this.options = options;
+        this.tfgsModel = tfgsModel;
 
         // Constantes de errores específicas para esta entidad
         this.ERRORS = {
@@ -194,33 +195,37 @@ class BaseService {
     }
 
     /**
-     * Elimina una entidad
-     * @async
-     * @param {string} id - ID de la entidad
-     * @returns {Promise<Object>} Entidad eliminada o resultado de la eliminación
-     * @throws {Error} Si la entidad no existe o está siendo utilizada
-     */
+ * Elimina una entidad
+ * @async
+ * @param {string} id - ID de la entidad
+ * @returns {Promise<Object>} Entidad eliminada o resultado de la eliminación
+ * @throws {Error} Si la entidad no existe o está siendo utilizada
+ */
     async delete(id) {
         try {
-            let isInUse = false;
-            // Verificar si la entidad está siendo usada en algún TFG
-            if (['advisor', 'degree', 'year'].includes(this.entityName)) {
-                isInUse = await this.isUsedInTFGs(id);
-                if (isInUse) {
-                    throw new Error(this.ERRORS.IN_USE);
-                }
-            } else {
+            // Validar que el tipo de entidad sea válido
+            if (!['advisor', 'degree', 'year'].includes(this.entityName)) {
                 throw new Error('INVALID_ENTITY_NAME');
             }
-            if (!isInUse) {
-                await this.model.findByIdAndDelete(id);
+
+            // Verificar si la entidad está siendo usada en algún TFG
+            const isInUse = await this.isUsedInTFGs(id);
+            if (isInUse) {
+                throw new Error(this.ERRORS.IN_USE);
             }
 
+            // Eliminar la entidad solo si no está en uso
+            const deletedEntity = await this.model.findByIdAndDelete(id);
+
+            // Si no se encontró la entidad, lanzar error
+            if (!deletedEntity) {
+                throw new Error(this.ERRORS.NOT_FOUND);
+            }
 
             // Devolver un ACK
             return { message: `${this.entityName} eliminado` };
         } catch (error) {
-            this._handleError(error, 'delete', id);
+            return this._handleError(error, 'delete', id);
         }
     }
 
@@ -234,7 +239,6 @@ class BaseService {
         try {
             const entity = await this.getById(id);
             if (!entity) return false;
-
             // Construir la consulta para el modelo TFG
             const query = {};
 
@@ -253,8 +257,7 @@ class BaseService {
                     // Si no es una entidad reconocida, buscar por el ID genérico
                     query[this.entityName] = entity._id;
             }
-
-            const count = await this.tfgsModel.countDocuments(query);
+            const count = await this.tfgsModel.find(query).countDocuments().exec();
             return count > 0;
         } catch (error) {
             if (error.message === this.ERRORS.NOT_FOUND || error.message === 'INVALID_ID') {

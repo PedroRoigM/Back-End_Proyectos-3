@@ -105,12 +105,8 @@ const validatorRecoverPassword = [
 ];
 
 const validatorSearchUsers = [
-    check('search')
-        .optional()
-        .isString().withMessage('El parámetro de búsqueda debe ser una cadena de texto'),
-    check('role')
-        .optional()
-        .isIn(["administrador", "coordinador", "usuario"]).withMessage('El rol debe ser administrador, coordinador o usuario'),
+    check('email')
+        .exists().withMessage('El email es obligatorio'),
     (req, res, next) => validateResults(req, res, next)
 ];
 

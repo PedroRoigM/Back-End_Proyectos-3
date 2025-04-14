@@ -47,10 +47,9 @@ const getUser = async (req, res) => {
  */
 const searchUsers = async (req, res) => {
     try {
-        const { search, role } = req.query;
-        // Implementar esta funcionalidad en el servicio
-        // const users = await userService.searchUsersByEmailOrName(search, role);
-        createResponse(res, 200, []); // Placeholder
+        const email = req.matchedData;
+        const results = await userService.getUserByEmail(email);
+        createResponse(res, 200, results); // Placeholder
     } catch (error) {
         logger.error('Error buscando usuarios', { error, search: req.query.search, role: req.query.role });
         errorHandler(error, res);

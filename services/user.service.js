@@ -104,10 +104,9 @@ const getUserById = async (id) => {
  * @param {boolean} includePassword - Si es true, incluye el campo password
  * @returns {Promise<Object|null>} Usuario encontrado o null
  */
-const getUserByEmail = async (email, includePassword = false) => {
+const getUserByEmail = async (email) => {
     try {
-        const fields = includePassword ? '+password' : '';
-        return await usersModel.findOne({ email }).select(fields);
+        return await usersModel.find({ email: { $regex: email.email, $options: 'i' } });
     } catch (error) {
         logger.error(`Error obteniendo usuario por email: ${email}`, { error });
         throw new Error('DEFAULT_ERROR');

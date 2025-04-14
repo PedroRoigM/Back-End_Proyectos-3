@@ -50,7 +50,7 @@ router.post('/validate', authMiddleware, validatorValidateUser, validateUser);
 
 // Obtención y gestión de usuarios
 router.get('/', authMiddleware, checkRole(["administrador"]), getUsers);
-router.get('/search', authMiddleware, checkRole(["administrador"]), validatorSearchUsers, searchUsers);
+router.post('/search', authMiddleware, checkRole(["administrador"]), validatorSearchUsers, searchUsers);
 router.get('/:id', authMiddleware, validatorGetUser, getUser);
 router.patch('/:id', authMiddleware, validatorGetUser, validatorUpdateUser, updateUser);
 router.patch('/role/:id', authMiddleware, checkRole(["administrador"]), validatorGetUser, validatorUpdateRole, updateRole);
