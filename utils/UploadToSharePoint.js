@@ -25,7 +25,6 @@ const uploadFileToSharePoint = async (file, token) => {
         // Verificar si la respuesta fue exitosa
         if (response.ok) {
             const responseData = await response.json();
-            console.log("Archivo subido con éxito:", responseData.d.ServerRelativeUrl);
             return responseData.d.ServerRelativeUrl;  // Retorna la URL del archivo subido
         } else {
             console.error("Error al subir el archivo:", response.statusText);

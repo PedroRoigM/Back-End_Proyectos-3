@@ -38,7 +38,6 @@ const sendVerificationCode = async (email, code, type = 'verification') => {
 
         // Enviar el correo
         await sendEmail(mailOptions);
-        console.log(`Código ${type} enviado a ${email}`);
     } catch (error) {
         console.error(`Error al enviar el código de ${type}:`, error);
         throw createError(`ERROR_SENDING_${type.toUpperCase()}_CODE`, 500);
@@ -106,7 +105,7 @@ const getUserById = async (id) => {
  */
 const getUserByEmail = async (email) => {
     try {
-        return await usersModel.find({ email: { $regex: email.email, $options: 'i' } });
+        return await usersModel.find({ email: { $regex: email, $options: 'i' } });
     } catch (error) {
         logger.error(`Error obteniendo usuario por email: ${email}`, { error });
         throw new Error('DEFAULT_ERROR');
@@ -124,7 +123,7 @@ const registerUser = async (userData) => {
     try {
         // Verificar que el email no exista
         const userWithEmail = await getUserByEmail(userData.email);
-        if (userWithEmail) {
+        if (userWithEmail.length > 0) {
             throw new Error('EMAIL_ALREADY_EXISTS');
         }
 

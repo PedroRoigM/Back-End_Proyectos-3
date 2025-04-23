@@ -21,7 +21,6 @@ class YearService extends BaseService {
             ;
             // Verificar si ya existe un año con ese nombre
             const existingYear = await this.findByName(yearData.year);
-            console.log(existingYear);
             if (existingYear.leght > 0) {
                 throw new Error('YEAR_ALREADY_EXISTS');
             }

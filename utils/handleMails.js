@@ -35,10 +35,8 @@ const createTransporter = async () => {
 
 const sendEmail = async (emailOptions) => {
     try {
-        console.log("Sending email...");
         let emailTransporter = await createTransporter();
         await emailTransporter.sendMail(emailOptions);
-        console.log("Email sent successfully!");
     } catch (e) {
         console.log(e)
     }
