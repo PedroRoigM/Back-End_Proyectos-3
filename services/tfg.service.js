@@ -125,7 +125,7 @@ class TfgService extends BaseService {
             }
 
             if (filters.verified !== undefined) query.verified = filters.verified;
-
+            else query.verified = true; // Por defecto, solo TFGs verificados
             // Filtro de búsqueda
             if (filters.search) {
                 const searchRegex = { $regex: filters.search, $options: "i" };
@@ -142,7 +142,8 @@ class TfgService extends BaseService {
                 ...query, year: { $ne: null },
                 degree: { $ne: null },
                 advisor: { $ne: null },
-                link: { $ne: null }
+                link: { $ne: null },
+                keywords: { $not: { $size: 0 } }
             };
             // Consulta principal
             const [tfgs, totalTFGs] = await Promise.all([
