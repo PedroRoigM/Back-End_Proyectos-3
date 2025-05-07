@@ -81,21 +81,31 @@ const getTFG = async (req, res) => {
 const getNextTFGS = async (req, res) => {
     try {
         const { page_number } = req.params;
-        const filters = { ...req.query, ...req.matchedData };
 
+        // Extraer filtros de req.matchedData o req.body
+        const filters = { ...req.matchedData };
+        console.log(filters);
         // Validar que page_number es un número válido
-        const pageNumber = parseInt(page_number);
+        const pageNumber = parseInt(page_number || filters.page_number);
         if (isNaN(pageNumber) || pageNumber < 1) {
             return errorHandler(new Error('VALIDATION_ERROR'), res);
         }
 
+        // Eliminar page_number de los filtros antes de pasarlos al servicio
+        delete filters.page_number;
+
         const result = await tfgService.getPaginatedTFGs(filters, pageNumber);
         createResponse(res, 200, result);
     } catch (error) {
-        logger.error('Error obteniendo TFGs paginados', { error, page: req.params.page_number, filters: req.matchedData });
+        logger.error('Error obteniendo TFGs paginados', {
+            error,
+            page: req.params.page_number,
+            filters: req.matchedData
+        });
         errorHandler(error, res);
     }
 };
+
 
 /**
  * Crea un nuevo TFG
@@ -178,16 +188,19 @@ const deleteTFG = async (req, res) => {
             await fileService.deleteFile(id);
         } catch (fileError) {
             logger.warn(`No se pudo eliminar el archivo del TFG ${id}`, { fileError });
+            // Continuar con la eliminación del TFG aunque falle la eliminación del archivo
         }
 
-        // Eliminar el TFG
         await tfgService.delete(id);
 
-        createResponse(res, 204);
+        createResponse(res, 204, { "message": "TFG eliminado correctamente" });
     } catch (error) {
         logger.error(`Error eliminando TFG ${req.params.id}`, { error });
         errorHandler(error, res);
     }
+
+
+
 };
 
 /**

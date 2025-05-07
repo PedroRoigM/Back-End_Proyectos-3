@@ -21,10 +21,19 @@ const validateResults = (req, res, next) => {
         return errorHandler(error, res);
     }
 
-    // Guardar datos validados en req.matchedData si se están haciendo validaciones
-    if (Object.keys(req.body).length > 0) {
-        req.matchedData = req.body;
-    }
+    // Combinar datos validados de body, params, y query
+    req.matchedData = {
+        ...req.body,
+        ...req.params,
+        ...req.query
+    };
+
+    // Eliminar campos undefined o null
+    Object.keys(req.matchedData).forEach(key => {
+        if (req.matchedData[key] === undefined || req.matchedData[key] === null) {
+            delete req.matchedData[key];
+        }
+    });
 
     next();
 };

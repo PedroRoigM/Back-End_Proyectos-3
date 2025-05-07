@@ -163,8 +163,11 @@ const validatePatchTFG = [
 ];
 
 const validateSearcher = [
-    check("page_number").not().isEmpty().withMessage("El campo 'page_number' es obligatorio.")
+    check("page_number")
+        .exists().withMessage("El campo 'page_number' es obligatorio.")
         .isInt({ min: 1 }).withMessage("El campo 'page_number' debe ser un número entero mayor que 0."),
+
+    // Validadores para campos opcionales
     check("year").optional()
         .isMongoId().withMessage("El campo 'year' debe ser un ID de MongoDB válido."),
     check("degree").optional()
@@ -176,17 +179,39 @@ const validateSearcher = [
     check("verified").optional()
         .isBoolean().withMessage("El campo 'verified' debe ser un valor booleano."),
 
+    // Middleware personalizado para manejar los filtros
     (req, res, next) => {
+        // Campos permitidos
         const allowedFields = ['page_number', 'year', 'degree', 'advisor', 'search', 'verified'];
-        Object.keys(req.body).forEach(key => {
-            if (!allowedFields.includes(key)) {
-                delete req.body[key];
-            }
+
+        // Objeto para recopilar todos los filtros posibles
+        const filters = {};
+
+        // Revisar body, params, y query
+        const sources = [req.body, req.params, req.query];
+
+        sources.forEach(source => {
+            allowedFields.forEach(field => {
+                // Si el campo existe en la fuente y no es undefined o null
+                if (source && source[field] !== undefined && source[field] !== null) {
+                    filters[field] = source[field];
+                }
+            });
         });
+
+        // Borrar page_number de los filtros (se maneja por separado)
+        const pageNumber = filters.page_number;
+        delete filters.page_number;
+
+        // Establecer los filtros en req.body para que validateResults los capture
+        req.body = { ...filters, page_number: pageNumber };
+
         next();
     },
     (req, res, next) => validateResults(req, res, next)
 ];
+
+
 
 // Validador para verificar un TFG
 const validateVerifyTFG = [

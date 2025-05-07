@@ -107,48 +107,76 @@ class TfgService extends BaseService {
     async getPaginatedTFGs(filters = {}, page = 1, pageSize = 10) {
         try {
             let query = {};
+            const mongoose = require('mongoose');
 
-            // Filtros básicos - convertir strings a ObjectId para las referencias
-            if (filters.year) {
+            // Arreglar este problema: usar new para crear ObjectId
+            if (filters.year && mongoose.Types.ObjectId.isValid(filters.year)) {
+                // Corrección: usar 'new' al crear el ObjectId
+                query.year = new mongoose.Types.ObjectId(filters.year);
+            } else if (filters.year) {
                 const year = await yearsModel.findOne({ year: filters.year });
                 if (year) query.year = year._id;
             }
 
-            if (filters.degree) {
+            if (filters.degree && mongoose.Types.ObjectId.isValid(filters.degree)) {
+                // Corrección: usar 'new' al crear el ObjectId
+                query.degree = new mongoose.Types.ObjectId(filters.degree);
+            } else if (filters.degree) {
                 const degree = await degreesModel.findOne({ degree: filters.degree });
                 if (degree) query.degree = degree._id;
             }
 
-            if (filters.advisor) {
+            if (filters.advisor && mongoose.Types.ObjectId.isValid(filters.advisor)) {
+                // Corrección: usar 'new' al crear el ObjectId
+                query.advisor = new mongoose.Types.ObjectId(filters.advisor);
+            } else if (filters.advisor) {
                 const advisor = await advisorsModel.findOne({ advisor: filters.advisor });
                 if (advisor) query.advisor = advisor._id;
             }
 
-            if (filters.verified !== undefined) query.verified = filters.verified;
-            else query.verified = true; // Por defecto, solo TFGs verificados
+            // El resto del código permanece igual
+            if (filters.verified !== undefined) {
+                query.verified = filters.verified;
+            } else {
+                query.verified = true; // Por defecto, solo TFGs verificados
+            }
+
             // Filtro de búsqueda
             if (filters.search) {
                 const searchRegex = { $regex: filters.search, $options: "i" };
                 query.$or = [
                     { student: searchRegex },
                     { tfgTitle: searchRegex },
-                    { keywords: { $in: filters.search.split(" ") } },
+                    { keywords: { $in: filters.search.split(/\s+/) } },
                     { abstract: searchRegex }
                 ];
             }
 
-            const skip = (page - 1) * pageSize;
+            // Asegúrate de que los campos obligatorios estén presentes
+            // La forma en que estaba el código causa problemas, ya que sobrescribe los filtros anteriores
+            // Usamos $and para combinar las condiciones
             query = {
-                ...query, year: { $ne: null },
-                degree: { $ne: null },
-                advisor: { $ne: null },
-                link: { $ne: null },
-                keywords: { $not: { $size: 0 } }
+                $and: [
+                    query,
+                    {
+                        year: { $ne: null },
+                        degree: { $ne: null },
+                        advisor: { $ne: null },
+                        link: { $ne: null },
+                        keywords: { $not: { $size: 0 } }
+                    }
+                ]
             };
+
+            // Añadir log para depuración
+            const skip = (page - 1) * pageSize;
+
             // Consulta principal
             const [tfgs, totalTFGs] = await Promise.all([
                 this.model.find(query)
-
+                    .populate('year', 'year')
+                    .populate('degree', 'degree')
+                    .populate('advisor', 'advisor')
                     .skip(skip)
                     .limit(pageSize)
                     .select('year degree student tfgTitle keywords advisor abstract'),
@@ -168,6 +196,8 @@ class TfgService extends BaseService {
             throw new Error('DEFAULT_ERROR');
         }
     }
+
+
 
     /**
      * Valida y obtiene referencias de año y grado

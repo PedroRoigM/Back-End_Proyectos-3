@@ -204,7 +204,7 @@ class BaseService {
     async delete(id) {
         try {
             // Validar que el tipo de entidad sea válido
-            if (!['advisor', 'degree', 'year'].includes(this.entityName)) {
+            if (!['advisor', 'degree', 'year', 'tfg'].includes(this.entityName)) {
                 throw new Error('INVALID_ENTITY_NAME');
             }
 
