@@ -49,21 +49,13 @@ const getTFGs = async (req, res) => {
 const getTFG = async (req, res) => {
     try {
         const { id } = req.params;
-        let isRestrictedUser = req.user && !["administrador", "coordinador"].includes(req.user.role);
+        let isAllowedUser = !(req.user && !["administrador", "coordinador"].includes(req.user.role));
         // Primero verificar si el TFG existe sin filtros de verificación
-        const tfgExists = await tfgService.getTFGById(id);
+        const tfg = await tfgService.getTFGById(id, isAllowedUser);
 
-        if (!tfgExists) {
-            return createResponse(res, 404, { message: "TFG no encontrado" });
-        }
-
-        // Agregar filtro de verificación para usuarios restringidos
-        if (isRestrictedUser && tfgExists.verified === false) {
-            return createResponse(res, 403, { message: "Acceso denegado a TFG no verificado" });
-        }
         // Incrementar las views
         await tfgService.incrementTFGViews(id);
-        return createResponse(res, 200, tfgExists);
+        return createResponse(res, 200, tfg);
 
 
     } catch (error) {

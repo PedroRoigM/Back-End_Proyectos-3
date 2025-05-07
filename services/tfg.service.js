@@ -82,7 +82,6 @@ class TfgService extends BaseService {
             if (!tfg) {
                 throw new Error(this.ERRORS.NOT_FOUND);
             }
-
             if (!tfg.verified && !allowUnverified) {
                 throw new Error('TFG_NOT_VERIFIED');
             }
