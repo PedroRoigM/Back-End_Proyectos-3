@@ -123,7 +123,7 @@ const createTFG = async (req, res) => {
 
         const createdTFG = await tfgService.create({
             ...tfgData,
-            link: "undefined", // El link se actualizará después con el archivo
+            link: undefined, // El link se actualizará después con el archivo
             createdBy: req.user._id
         });
 

@@ -39,7 +39,6 @@ const TfgSchema = new mongoose.Schema({
     },
     link: {
         type: String,
-        required: [true, 'El enlace al TFG es obligatorio']
     },
     advisor: {
         type: mongoose.Schema.Types.ObjectId,

@@ -72,7 +72,8 @@ class TfgService extends BaseService {
                 year: { $ne: null },
                 degree: { $ne: null },
                 advisor: { $ne: null },
-                link: { $ne: null }
+                link: { $ne: undefined },
+                keywords: { $not: { $size: 0 } }
             })
                 .populate({ path: 'year', select: 'year' })
                 .populate({ path: 'degree', select: 'degree' })
@@ -161,7 +162,10 @@ class TfgService extends BaseService {
                         year: { $ne: null },
                         degree: { $ne: null },
                         advisor: { $ne: null },
-                        link: { $ne: null },
+                        link: {
+                            $exists: true,
+                            $ne: undefined
+                        },
                         keywords: { $not: { $size: 0 } }
                     }
                 ]
